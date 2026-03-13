@@ -65,6 +65,12 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;mi
 .promo-desc{font-size:0.7rem;color:var(--text2);margin-top:4px}
 .promo-btn{display:inline-block;margin-top:10px;background:linear-gradient(135deg,#7c3aed,#4c1d95);color:#fff;font-size:0.78rem;font-weight:700;padding:8px 20px;border-radius:20px;text-decoration:none;border:none;cursor:pointer}
 </style>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sports Live">
+  <link rel="apple-touch-icon" href="icon-192.png">
 </head>
 <body>
 
@@ -180,6 +186,12 @@ const guessStats = JSON.parse(localStorage.getItem('sg_stats')||'{"pts":0}');
 document.getElementById('totalCoins').textContent = slotsCoins + (guessStats.pts||0);
 document.getElementById('totalGoals').textContent = penaltyStats.goals || 0;
 document.getElementById('totalJackpots').textContent = slotsJackpots;
+</script>
+
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
 </script>
 </body>
 </html>
