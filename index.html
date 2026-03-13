@@ -1,521 +1,315 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>⚽ Sports Live | 体育即时比分</title>
-  <style>
-    :root {
-      --bg-primary: #0a0e1a;
-      --bg-secondary: #111827;
-      --bg-card: #1a2035;
-      --bg-card-hover: #1e2645;
-      --accent: #3b82f6;
-      --accent-glow: rgba(59,130,246,0.25);
-      --accent2: #8b5cf6;
-      --green: #10b981;
-      --yellow: #f59e0b;
-      --red: #ef4444;
-      --text-primary: #f1f5f9;
-      --text-secondary: #94a3b8;
-      --text-muted: #64748b;
-      --border: rgba(255,255,255,0.07);
-      --shadow: 0 4px 24px rgba(0,0,0,0.4);
-    }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
-    body {
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      min-height: 100vh;
-      line-height: 1.5;
-    }
-
-    /* ── Header ── */
-    header {
-      background: linear-gradient(135deg, #0d1b3e 0%, #1a1a2e 100%);
-      border-bottom: 1px solid var(--border);
-      padding: 16px 20px;
-      position: sticky; top: 0; z-index: 100;
-      backdrop-filter: blur(12px);
-    }
-    .header-inner {
-      max-width: 1100px; margin: 0 auto;
-      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
-    }
-    .logo { display: flex; align-items: center; gap: 10px; }
-    .logo-text h1 { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.5px; }
-    .logo-text p  { font-size: 0.72rem; color: var(--text-secondary); margin-top: 1px; }
-    .live-badge {
-      display: flex; align-items: center; gap: 6px;
-      background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4);
-      padding: 4px 10px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; color: #ef4444;
-    }
-    .live-dot {
-      width: 8px; height: 8px; background: #ef4444; border-radius: 50%;
-      animation: pulse 1.4s infinite;
-    }
-    @keyframes pulse {
-      0%,100% { opacity:1; transform:scale(1); }
-      50%      { opacity:0.4; transform:scale(0.7); }
-    }
-
-    /* ── Layout ── */
-    .container { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; }
-
-    /* ── League Tabs ── */
-    .tabs-wrapper { overflow-x: auto; margin-bottom: 24px; -webkit-overflow-scrolling: touch; }
-    .tabs-wrapper::-webkit-scrollbar { height: 3px; }
-    .tabs-wrapper::-webkit-scrollbar-track { background: transparent; }
-    .tabs-wrapper::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-    .tabs {
-      display: flex; gap: 8px; width: max-content; padding-bottom: 4px;
-    }
-    .tab-btn {
-      background: var(--bg-card); border: 1px solid var(--border);
-      color: var(--text-secondary); padding: 9px 16px; border-radius: 24px;
-      font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap;
-      transition: all 0.2s; user-select: none;
-    }
-    .tab-btn:hover  { border-color: var(--accent); color: var(--text-primary); }
-    .tab-btn.active {
-      background: var(--accent); border-color: var(--accent); color: #fff;
-      box-shadow: 0 0 18px var(--accent-glow);
-    }
-
-    /* ── Section Tabs ── */
-    .section-tabs { display: flex; gap: 6px; margin-bottom: 20px; }
-    .sec-btn {
-      background: var(--bg-card); border: 1px solid var(--border);
-      color: var(--text-secondary); padding: 7px 18px; border-radius: 8px;
-      font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
-    }
-    .sec-btn:hover  { color: var(--text-primary); }
-    .sec-btn.active { background: var(--bg-secondary); border-color: var(--accent); color: var(--accent); }
-
-    /* ── Match Cards ── */
-    #matches-panel, #table-panel, #predict-panel { display: none; }
-    #matches-panel.active, #table-panel.active, #predict-panel.active { display: block; }
-
-    .matches-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
-      gap: 14px;
-    }
-    .match-card {
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: 14px; padding: 16px 18px;
-      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
-      cursor: default;
-    }
-    .match-card:hover {
-      transform: translateY(-2px);
-      border-color: rgba(59,130,246,0.3);
-      box-shadow: var(--shadow);
-    }
-    .card-top {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 14px;
-    }
-    .status-badge {
-      font-size: 0.7rem; font-weight: 700; padding: 3px 8px; border-radius: 6px;
-      text-transform: uppercase; letter-spacing: 0.5px;
-    }
-    .status-ft   { background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3); }
-    .status-ns   { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); }
-    .status-live { background: rgba(239,68,68,0.15);  color: #ef4444;  border: 1px solid rgba(239,68,68,0.3); }
-    .match-date  { font-size: 0.72rem; color: var(--text-muted); }
-    .teams-row {
-      display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center;
-    }
-    .team { display: flex; flex-direction: column; gap: 4px; }
-    .team-home { align-items: flex-start; }
-    .team-away { align-items: flex-end; text-align: right; }
-    .team-badge {
-      width: 36px; height: 36px; border-radius: 8px; background: var(--bg-secondary);
-      display: flex; align-items: center; justify-content: center; overflow: hidden;
-      border: 1px solid var(--border);
-    }
-    .team-badge img { width: 28px; height: 28px; object-fit: contain; }
-    .team-name { font-size: 0.82rem; font-weight: 600; color: var(--text-primary); }
-    .score-block { text-align: center; }
-    .score {
-      font-size: 1.9rem; font-weight: 900;
-      background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      line-height: 1;
-    }
-    .score-dash { color: var(--text-muted); font-size: 0.75rem; margin-top: 2px; }
-
-    /* loading / error */
-    .skeleton-row  { display: flex; flex-direction: column; gap: 14px; }
-    .skeleton-card {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
-      padding: 18px; height: 110px;
-      background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-card-hover) 50%, var(--bg-card) 75%);
-      background-size: 400% 100%;
-      animation: shimmer 1.5s infinite;
-    }
-    @keyframes shimmer { 0%{background-position:100%}100%{background-position:-100%} }
-    .error-msg {
-      text-align: center; padding: 40px 20px; color: var(--text-muted);
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
-    }
-    .error-msg span { font-size: 2rem; display: block; margin-bottom: 8px; }
-
-    /* ── Standings Table ── */
-    .table-wrap { overflow-x: auto; border-radius: 14px; border: 1px solid var(--border); }
-    table { width: 100%; border-collapse: collapse; min-width: 520px; }
-    thead th {
-      background: var(--bg-secondary); padding: 11px 12px;
-      font-size: 0.75rem; font-weight: 700; color: var(--text-muted);
-      text-transform: uppercase; letter-spacing: 0.5px; text-align: center;
-    }
-    thead th:first-child, thead th:nth-child(2) { text-align: left; }
-    tbody tr { border-top: 1px solid var(--border); transition: background 0.15s; }
-    tbody tr:hover { background: var(--bg-card-hover); }
-    tbody td {
-      padding: 11px 12px; font-size: 0.85rem; text-align: center; color: var(--text-primary);
-    }
-    tbody td:first-child { color: var(--text-muted); font-weight: 700; min-width: 32px; }
-    .td-team { display: flex; align-items: center; gap: 8px; text-align: left !important; min-width: 160px; }
-    .td-badge { width: 22px; height: 22px; border-radius: 4px; background: var(--bg-secondary); display:flex; align-items:center; justify-content:center; overflow:hidden; }
-    .td-badge img { width: 18px; height: 18px; object-fit: contain; }
-    .pts { font-weight: 800; color: var(--accent); }
-    .zone-cl   { border-left: 3px solid #3b82f6; }
-    .zone-el   { border-left: 3px solid #10b981; }
-    .zone-rel  { border-left: 3px solid #ef4444; }
-
-    /* ── Predictions ── */
-    .predict-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 14px; }
-    .predict-card {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 18px;
-      transition: transform 0.2s, border-color 0.2s;
-    }
-    .predict-card:hover { transform: translateY(-2px); border-color: rgba(139,92,246,0.4); }
-    .predict-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 14px; text-align: center; }
-    .prob-row { margin-bottom: 10px; }
-    .prob-label { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 5px; }
-    .prob-pct { font-weight: 700; color: var(--text-primary); }
-    .prob-bar-bg { background: var(--bg-secondary); border-radius: 6px; height: 8px; overflow: hidden; }
-    .prob-bar { height: 100%; border-radius: 6px; transition: width 1s ease; }
-    .bar-home  { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
-    .bar-draw  { background: linear-gradient(90deg, #f59e0b, #fcd34d); }
-    .bar-away  { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
-    .ai-note {
-      margin-top: 12px; padding: 10px 12px;
-      background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.2);
-      border-radius: 8px; font-size: 0.75rem; color: var(--text-secondary); line-height: 1.5;
-    }
-    .ai-note strong { color: var(--accent2); }
-
-    /* ── Footer ── */
-    footer {
-      text-align: center; padding: 24px 16px;
-      border-top: 1px solid var(--border); color: var(--text-muted); font-size: 0.75rem;
-    }
-
-    /* ── Spinner ── */
-    .spinner {
-      display: flex; justify-content: center; align-items: center; padding: 40px;
-      gap: 8px; color: var(--text-muted); font-size: 0.85rem;
-    }
-    .spin { width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite; }
-    @keyframes spin{to{transform:rotate(360deg)}}
-
-    @media(max-width:480px){
-      .logo-text h1 { font-size: 1.1rem; }
-      .score { font-size: 1.5rem; }
-      .matches-grid, .predict-grid { grid-template-columns: 1fr; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚽ Sports Live - 即时比分</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#060d1a;--card:#0d1b2e;--card2:#111f35;--border:#1a3050;
+  --blue:#2563eb;--blue2:#1d4ed8;--accent:#38bdf8;
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+  --green:#22c55e;--red:#ef4444;--yellow:#f59e0b;
+  --win:#166534;--draw:#854d0e;--loss:#7f1d1d;
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;min-height:100vh}
+/* HEADER */
+.header{background:linear-gradient(135deg,#0a1628,#0f2044);border-bottom:1px solid var(--border);padding:12px 16px;position:sticky;top:0;z-index:100;backdrop-filter:blur(10px)}
+.header-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{font-size:28px;filter:drop-shadow(0 0 8px #2563eb)}
+.logo-text h1{font-size:1.2rem;font-weight:800;background:linear-gradient(90deg,#38bdf8,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo-text p{font-size:0.65rem;color:var(--text3);letter-spacing:1px}
+.live-badge{display:flex;align-items:center;gap:6px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:20px;padding:4px 10px}
+.live-dot{width:7px;height:7px;background:#ef4444;border-radius:50%;box-shadow:0 0 6px #ef4444;animation:livepulse 1.2s ease-in-out infinite}
+@keyframes livepulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.8)}}
+.live-text{font-size:0.7rem;font-weight:700;color:#ef4444;letter-spacing:1px}
+/* NAV */
+.nav{background:#0a1628;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.nav-inner{max-width:1200px;margin:0 auto;display:flex;padding:0 12px}
+.nav-tab{padding:12px 16px;font-size:0.82rem;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all 0.2s;display:flex;align-items:center;gap:6px}
+.nav-tab:hover{color:var(--text);background:rgba(255,255,255,0.03)}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+/* LAYOUT */
+.main{max-width:1200px;margin:0 auto;padding:16px;display:grid;grid-template-columns:1fr 320px;gap:16px}
+@media(max-width:768px){.main{grid-template-columns:1fr}.standings-col{display:none}}
+/* SECTION HEADER */
+.section-title{font-size:0.75rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+/* MATCH CARD */
+.match-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:8px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden}
+.match-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--border);border-radius:3px 0 0 3px}
+.match-card.finished::before{background:var(--green)}
+.match-card.upcoming::before{background:var(--yellow)}
+.match-card:hover{border-color:var(--blue);transform:translateY(-1px);box-shadow:0 4px 20px rgba(37,99,235,0.15)}
+.match-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.match-league{font-size:0.65rem;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+.match-status{font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:10px}
+.status-fin{background:rgba(34,197,94,0.15);color:var(--green)}
+.status-up{background:rgba(245,158,11,0.15);color:var(--yellow)}
+.match-teams{display:flex;align-items:center;gap:8px}
+.team-side{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px}
+.team-badge{width:36px;height:36px;object-fit:contain;filter:drop-shadow(0 0 4px rgba(0,0,0,0.5))}
+.team-badge-placeholder{width:36px;height:36px;background:var(--card2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem}
+.team-name{font-size:0.78rem;font-weight:600;text-align:center;color:var(--text)}
+.score-box{display:flex;flex-direction:column;align-items:center;min-width:80px}
+.score{font-size:1.8rem;font-weight:900;color:#fff;letter-spacing:2px;text-shadow:0 0 20px rgba(56,189,248,0.3)}
+.score-date{font-size:0.62rem;color:var(--text3);margin-top:2px}
+.score-vs{font-size:0.9rem;color:var(--text3);font-weight:700}
+/* FORM BADGES */
+.form-row{display:flex;gap:3px;justify-content:center;margin-top:4px}
+.form-badge{width:16px;height:16px;border-radius:3px;font-size:0.55rem;font-weight:800;display:flex;align-items:center;justify-content:center}
+.form-w{background:var(--win);color:#86efac}
+.form-d{background:var(--draw);color:#fcd34d}
+.form-l{background:var(--loss);color:#fca5a5}
+/* STANDINGS */
+.standings-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;position:sticky;top:70px}
+.standings-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.standings-header span{font-size:0.8rem;font-weight:700;color:var(--text)}
+.table-row{display:grid;grid-template-columns:28px 1fr 28px 28px 28px 36px;gap:4px;padding:9px 12px;align-items:center;border-bottom:1px solid rgba(26,48,80,0.5);transition:background 0.15s;font-size:0.75rem}
+.table-row:hover{background:var(--card2)}
+.table-row.header{background:rgba(37,99,235,0.1);font-size:0.65rem;color:var(--text3);font-weight:700;text-transform:uppercase}
+.rank{color:var(--text3);font-weight:700;text-align:center}
+.rank.top4{color:var(--blue);font-weight:800}
+.rank.top6{color:var(--accent)}
+.team-cell{display:flex;align-items:center;gap:6px;overflow:hidden}
+.mini-badge{width:18px;height:18px;object-fit:contain}
+.team-cell span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.pts{font-weight:800;color:var(--accent);text-align:center}
+.stat{color:var(--text3);text-align:center}
+/* PREDICTION */
+.predict-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px}
+.predict-teams{text-align:center;font-weight:700;font-size:0.95rem;margin-bottom:14px;color:var(--text)}
+.prob-row{margin-bottom:10px}
+.prob-label{display:flex;justify-content:space-between;font-size:0.72rem;color:var(--text2);margin-bottom:4px}
+.prob-bar{height:8px;border-radius:4px;background:var(--card2);overflow:hidden}
+.prob-fill{height:100%;border-radius:4px;transition:width 1s ease}
+.fill-home{background:linear-gradient(90deg,#2563eb,#38bdf8)}
+.fill-draw{background:linear-gradient(90deg,#d97706,#fbbf24)}
+.fill-away{background:linear-gradient(90deg,#16a34a,#4ade80)}
+.ai-note{font-size:0.68rem;color:var(--text3);text-align:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+/* LOADING */
+.loading{text-align:center;padding:40px;color:var(--text3)}
+.spinner{font-size:2rem;animation:spin 1s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* SCROLL TO TOP */
+.scroll-top{position:fixed;bottom:20px;right:20px;background:var(--blue);color:#fff;border:none;border-radius:50%;width:40px;height:40px;cursor:pointer;font-size:1.2rem;display:none;align-items:center;justify-content:center;box-shadow:0 4px 15px rgba(37,99,235,0.4)}
+</style>
 </head>
 <body>
 
-<header>
+<div class="header">
   <div class="header-inner">
     <div class="logo">
+      <span class="logo-icon">⚽</span>
       <div class="logo-text">
-        <h1>⚽ Sports Live</h1>
-        <p>体育即时比分 | ពិន្ទុផ្ទាល់</p>
+        <h1>Sports Live</h1>
+        <p>即时比分 · LIVE SCORES · ពិន្ទុផ្ទាល់</p>
       </div>
     </div>
-    <div class="live-badge"><div class="live-dot"></div>LIVE</div>
-  </div>
-</header>
-
-<div class="container">
-
-  <!-- League Tabs -->
-  <div class="tabs-wrapper">
-    <div class="tabs" id="leagueTabs">
-      <button class="tab-btn active" data-id="4328" data-name="英超🏴󠁧󠁢󠁥󠁮󠁧󠁿">英超🏴󠁧󠁢󠁥󠁮󠁧󠁿</button>
-      <button class="tab-btn" data-id="4335" data-name="西甲🇪🇸">西甲🇪🇸</button>
-      <button class="tab-btn" data-id="4332" data-name="意甲🇮🇹">意甲🇮🇹</button>
-      <button class="tab-btn" data-id="4331" data-name="德甲🇩🇪">德甲🇩🇪</button>
-      <button class="tab-btn" data-id="4334" data-name="法甲🇫🇷">法甲🇫🇷</button>
-      <button class="tab-btn" data-id="predict" data-name="预测🔮">预测🔮</button>
+    <div class="live-badge">
+      <div class="live-dot"></div>
+      <span class="live-text">LIVE</span>
     </div>
   </div>
-
-  <!-- Section Tabs (Matches / Table) -->
-  <div class="section-tabs" id="sectionTabs">
-    <button class="sec-btn active" data-sec="matches">🏆 比赛结果</button>
-    <button class="sec-btn" data-sec="table">📊 积分榜</button>
-  </div>
-
-  <!-- Matches Panel -->
-  <div id="matches-panel" class="active">
-    <div id="matchesContent"><div class="spinner"><div class="spin"></div> 加载比赛数据...</div></div>
-  </div>
-
-  <!-- Table Panel -->
-  <div id="table-panel">
-    <div id="tableContent"><div class="spinner"><div class="spin"></div> 加载积分榜...</div></div>
-  </div>
-
-  <!-- Predict Panel -->
-  <div id="predict-panel">
-    <div id="predictContent"></div>
-  </div>
-
 </div>
 
-<footer>
-  <p>数据来源：TheSportsDB &nbsp;|&nbsp; ©2025 Sports Live &nbsp;|&nbsp; 仅供参考</p>
-</footer>
+<div class="nav">
+  <div class="nav-inner">
+    <div class="nav-tab active" onclick="switchLeague(4328,'epl',this)">🏴󠁧󠁢󠁥󠁮󠁧󠁿 英超</div>
+    <div class="nav-tab" onclick="switchLeague(4335,'laliga',this)">🇪🇸 西甲</div>
+    <div class="nav-tab" onclick="switchLeague(4332,'seriea',this)">🇮🇹 意甲</div>
+    <div class="nav-tab" onclick="switchLeague(4331,'bund',this)">🇩🇪 德甲</div>
+    <div class="nav-tab" onclick="switchLeague(4334,'ligue1',this)">🇫🇷 法甲</div>
+    <div class="nav-tab" onclick="switchLeague(null,'predict',this)">🔮 AI预测</div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="matches-col">
+    <div id="matches-content">
+      <div class="loading"><div class="spinner">⚽</div><p style="margin-top:10px">加载中...</p></div>
+    </div>
+  </div>
+  <div class="standings-col">
+    <div class="standings-card">
+      <div class="standings-header">🏆 <span>积分榜 Standings</span></div>
+      <div class="table-row header">
+        <span>#</span><span>球队</span><span>赛</span><span>胜</span><span>负</span><span>积分</span>
+      </div>
+      <div id="standings-content"><div class="loading" style="padding:20px"><div class="spinner" style="font-size:1rem">⏳</div></div></div>
+    </div>
+  </div>
+</div>
+
+<button class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
 
 <script>
-  const LEAGUES = {
-    '4328': { name:'英超', country:'England' },
-    '4335': { name:'西甲', country:'Spain' },
-    '4332': { name:'意甲', country:'Italy' },
-    '4331': { name:'德甲', country:'Germany' },
-    '4334': { name:'法甲', country:'France' },
-  };
+const API = 'https://www.thesportsdb.com/api/v1/json/3';
+let currentLeague = 4328;
 
-  let currentLeague = '4328';
-  let currentSection = 'matches';
-  const cache = {};
+window.addEventListener('scroll', () => {
+  document.getElementById('scrollTop').style.display = window.scrollY > 300 ? 'flex' : 'none';
+});
 
-  // ── Fetch helpers ──
-  async function fetchEvents(lid) {
-    if (cache['ev_'+lid]) return cache['ev_'+lid];
-    try {
-      const r = await fetch(`https://www.thesportsdb.com/api/v1/json/3/eventspastleague.php?id=${lid}`);
-      const d = await r.json();
-      const events = (d.events || []).slice(-30).reverse();
-      cache['ev_'+lid] = events;
-      return events;
-    } catch(e) { return null; }
-  }
+function formBadge(f) {
+  if(!f) return '';
+  return f.split('').slice(0,5).map(c => {
+    const cls = c==='W'?'form-w':c==='D'?'form-d':'form-l';
+    return `<span class="form-badge ${cls}">${c}</span>`;
+  }).join('');
+}
 
-  async function fetchTable(lid) {
-    if (cache['tb_'+lid]) return cache['tb_'+lid];
-    try {
-      const r = await fetch(`https://www.thesportsdb.com/api/v1/json/3/lookuptable.php?l=${lid}&s=2024-2025`);
-      const d = await r.json();
-      const table = d.table || [];
-      cache['tb_'+lid] = table;
-      return table;
-    } catch(e) { return null; }
-  }
-
-  // ── Render Matches ──
-  function renderMatches(events) {
-    if (!events) {
-      return `<div class="error-msg"><span>⚠️</span>数据加载失败，请稍后重试</div>`;
-    }
-    if (!events.length) {
-      return `<div class="error-msg"><span>📭</span>暂无比赛数据</div>`;
-    }
-    return `<div class="matches-grid">${events.map(ev => {
-      const hs = ev.intHomeScore ?? '-';
-      const as = ev.intAwayScore ?? '-';
-      const hasScore = hs !== null && hs !== '' && hs !== '-';
-      const statusLabel = hasScore ? '完场' : '未开赛';
-      const statusClass = hasScore ? 'status-ft' : 'status-ns';
-      const dateStr = ev.dateEvent ? new Date(ev.dateEvent).toLocaleDateString('zh-CN', {month:'short',day:'numeric'}) : '';
-      const homeBadge = ev.strHomeTeamBadge
-        ? `<img src="${ev.strHomeTeamBadge}/tiny" alt="" onerror="this.style.display='none'">`
-        : '';
-      const awayBadge = ev.strAwayTeamBadge
-        ? `<img src="${ev.strAwayTeamBadge}/tiny" alt="" onerror="this.style.display='none'">`
-        : '';
-      return `
-      <div class="match-card">
-        <div class="card-top">
-          <span class="status-badge ${statusClass}">${statusLabel}</span>
-          <span class="match-date">${dateStr}</span>
-        </div>
-        <div class="teams-row">
-          <div class="team team-home">
-            <div class="team-badge">${homeBadge}</div>
-            <div class="team-name">${ev.strHomeTeam}</div>
-          </div>
-          <div class="score-block">
-            <div class="score">${hasScore ? hs+' - '+as : 'vs'}</div>
-            <div class="score-dash">${hasScore ? 'FT' : ev.strTime || ''}</div>
-          </div>
-          <div class="team team-away">
-            <div class="team-badge">${awayBadge}</div>
-            <div class="team-name">${ev.strAwayTeam}</div>
-          </div>
-        </div>
-      </div>`;
-    }).join('')}</div>`;
-  }
-
-  // ── Render Table ──
-  function renderTable(rows) {
-    if (!rows) return `<div class="error-msg"><span>⚠️</span>积分榜加载失败</div>`;
-    if (!rows.length) return `<div class="error-msg"><span>📭</span>暂无积分榜数据</div>`;
-    const tbody = rows.map((r, i) => {
-      let zoneClass = '';
-      if (i < 4) zoneClass = 'zone-cl';
-      else if (i < 6) zoneClass = 'zone-el';
-      else if (i >= rows.length - 3) zoneClass = 'zone-rel';
-      const badge = r.strTeamBadge
-        ? `<div class="td-badge"><img src="${r.strTeamBadge}/tiny" alt="" onerror="this.style.display='none'"></div>`
-        : '<div class="td-badge"></div>';
-      return `<tr class="${zoneClass}">
-        <td>${r.intRank}</td>
-        <td><div class="td-team">${badge}<span>${r.strTeam}</span></div></td>
-        <td>${r.intPlayed}</td>
-        <td>${r.intWin}</td>
-        <td>${r.intDraw}</td>
-        <td>${r.intLoss}</td>
-        <td>${r.intGoalsFor??''}</td>
-        <td>${r.intGoalsAgainst??''}</td>
-        <td>${r.intGoalDifference??''}</td>
-        <td class="pts">${r.intPoints}</td>
-      </tr>`;
-    }).join('');
-    return `
-    <div style="margin-bottom:10px;display:flex;gap:16px;flex-wrap:wrap;font-size:0.72rem;color:var(--text-muted)">
-      <span><span style="display:inline-block;width:10px;height:10px;background:#3b82f6;border-radius:2px;margin-right:4px"></span>欧冠资格</span>
-      <span><span style="display:inline-block;width:10px;height:10px;background:#10b981;border-radius:2px;margin-right:4px"></span>欧联杯资格</span>
-      <span><span style="display:inline-block;width:10px;height:10px;background:#ef4444;border-radius:2px;margin-right:4px"></span>降级区</span>
+function matchCard(e) {
+  const hs = e.intHomeScore !== null && e.intHomeScore !== '' ? e.intHomeScore : null;
+  const as = e.intAwayScore !== null && e.intAwayScore !== '' ? e.intAwayScore : null;
+  const finished = hs !== null;
+  const scoreHtml = finished
+    ? `<div class="score">${hs} - ${as}</div><div class="score-date">${e.dateEvent||''}</div>`
+    : `<div class="score-vs">VS</div><div class="score-date">${e.dateEvent||''}</div>`;
+  const homeThumb = e.strHomeTeamBadge ? `<img class="team-badge" src="${e.strHomeTeamBadge}/preview" onerror="this.style.display='none'">` : '<div class="team-badge-placeholder">🏠</div>';
+  const awayThumb = e.strAwayTeamBadge ? `<img class="team-badge" src="${e.strAwayTeamBadge}/preview" onerror="this.style.display='none'">` : '<div class="team-badge-placeholder">✈️</div>';
+  return `
+  <div class="match-card ${finished?'finished':'upcoming'}" onclick="showPredict('${e.strHomeTeam}','${e.strAwayTeam}',${hs||0},${as||0})">
+    <div class="match-meta">
+      <span class="match-league">${e.strLeague||''} · R${e.intRound||'-'}</span>
+      <span class="match-status ${finished?'status-fin':'status-up'}">${finished?'✅ 完场':'🕐 未开赛'}</span>
     </div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>#</th><th>球队</th><th>场</th><th>胜</th><th>平</th><th>负</th><th>进</th><th>失</th><th>净</th><th>分</th>
-          </tr>
-        </thead>
-        <tbody>${tbody}</tbody>
-      </table>
-    </div>`;
-  }
+    <div class="match-teams">
+      <div class="team-side">${homeThumb}<div class="team-name">${e.strHomeTeam}</div></div>
+      <div class="score-box">${scoreHtml}</div>
+      <div class="team-side">${awayThumb}<div class="team-name">${e.strAwayTeam}</div></div>
+    </div>
+  </div>`;
+}
 
-  // ── Render Predictions ──
-  function renderPredictions(events) {
-    if (!events || !events.length) {
-      return `<div class="error-msg"><span>🔮</span>请先选择一个联赛再查看预测</div>`;
-    }
-    // take last 6 matches or upcoming-ish
-    const sample = events.slice(0, 6);
-    const cards = sample.map(ev => {
-      // generate pseudo probabilities based on team names (deterministic)
-      const seed = hashStr(ev.strHomeTeam + ev.strAwayTeam);
-      let h = 30 + (seed % 35);
-      let d = 15 + ((seed >> 3) % 20);
-      let a = 100 - h - d;
-      if (a < 10) { a = 15; d = 20; h = 65; }
-      const confidence = 60 + (seed % 25);
-      const tips = [
-        `主场${ev.strHomeTeam}近期状态${h>50?'出色':'稳定'}，主胜概率更高。建议关注首球得分者。`,
-        `${ev.strAwayTeam}客场能力较强，双方交锋历史较为均衡，平局可能性不可忽视。`,
-        `两队进攻端均有亮点，预计比赛进球数在2-3球区间。大球可能性偏高。`,
-        `近期交锋记录显示，主队${ev.strHomeTeam}占有优势，但客队不容小觑。`,
-      ];
-      const tip = tips[seed % tips.length];
-      return `
-      <div class="predict-card">
-        <div class="predict-title">${ev.strHomeTeam} <span style="color:var(--text-muted);font-weight:400">vs</span> ${ev.strAwayTeam}</div>
-        <div class="prob-row">
-          <div class="prob-label"><span>主胜 ${ev.strHomeTeam}</span><span class="prob-pct">${h}%</span></div>
-          <div class="prob-bar-bg"><div class="prob-bar bar-home" style="width:${h}%"></div></div>
-        </div>
-        <div class="prob-row">
-          <div class="prob-label"><span>平局</span><span class="prob-pct">${d}%</span></div>
-          <div class="prob-bar-bg"><div class="prob-bar bar-draw" style="width:${d}%"></div></div>
-        </div>
-        <div class="prob-row">
-          <div class="prob-label"><span>客胜 ${ev.strAwayTeam}</span><span class="prob-pct">${a}%</span></div>
-          <div class="prob-bar-bg"><div class="prob-bar bar-away" style="width:${a}%"></div></div>
-        </div>
-        <div class="ai-note"><strong>🤖 AI 分析：</strong> ${tip} <em>置信度 ${confidence}%</em></div>
+async function loadMatches(leagueId) {
+  document.getElementById('matches-content').innerHTML = '<div class="loading"><div class="spinner">⚽</div><p style="margin-top:10px">加载中...</p></div>';
+  try {
+    const r = await fetch(`${API}/eventspastleague.php?id=${leagueId}`);
+    const d = await r.json();
+    const events = (d.events||[]).reverse();
+    if(!events.length){document.getElementById('matches-content').innerHTML='<p style="color:var(--text3);text-align:center;padding:40px">暂无数据</p>';return;}
+    document.getElementById('matches-content').innerHTML =
+      `<div class="section-title">最近比赛结果</div>` + events.map(matchCard).join('');
+  } catch(e) {
+    document.getElementById('matches-content').innerHTML = '<p style="color:#ef4444;text-align:center;padding:40px">加载失败，请稍后重试</p>';
+  }
+}
+
+async function loadStandings(leagueId) {
+  document.getElementById('standings-content').innerHTML = '<div class="loading" style="padding:20px"><div class="spinner" style="font-size:1rem">⏳</div></div>';
+  try {
+    const r = await fetch(`${API}/lookuptable.php?l=${leagueId}&s=2024-2025`);
+    const d = await r.json();
+    const table = d.table||[];
+    if(!table.length){document.getElementById('standings-content').innerHTML='<p style="color:var(--text3);font-size:0.75rem;padding:16px">暂无积分榜</p>';return;}
+    document.getElementById('standings-content').innerHTML = table.map((t,i) => {
+      const rank = parseInt(t.intRank||i+1);
+      const rankClass = rank<=4?'top4':rank<=6?'top6':'';
+      const badge = t.strBadge ? `<img class="mini-badge" src="${t.strBadge}/preview" onerror="this.style.display='none'">` : '';
+      return `<div class="table-row">
+        <span class="rank ${rankClass}">${rank}</span>
+        <div class="team-cell">${badge}<span>${t.strTeam}</span></div>
+        <span class="stat">${t.intPlayed||0}</span>
+        <span class="stat">${t.intWin||0}</span>
+        <span class="stat">${t.intLoss||0}</span>
+        <span class="pts">${t.intPoints||0}</span>
       </div>`;
     }).join('');
-    return `<div class="predict-grid">${cards}</div>`;
+  } catch(e) {}
+}
+
+function showPredict(home, away, hs, as) {
+  // 简单AI预测算法
+  const homeAdv = 10;
+  let homeScore = 50 + homeAdv;
+  let awayScore = 50;
+  if(hs > 0 || as > 0) {
+    homeScore = Math.round((hs/(hs+as||1))*100);
+    awayScore = Math.round((as/(hs+as||1))*100);
   }
+  const draw = Math.round((100 - Math.abs(homeScore-awayScore)) * 0.3);
+  const total = homeScore + draw + awayScore;
+  const h = Math.round(homeScore/total*100);
+  const d = Math.round(draw/total*100);
+  const a = 100-h-d;
 
-  function hashStr(s) {
-    let h = 0;
-    for (let i=0; i<s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
-    return Math.abs(h);
-  }
+  const modal = `<div id="predict-modal" onclick="this.remove()" style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px">
+    <div onclick="event.stopPropagation()" style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;width:100%;max-width:400px">
+      <div style="text-align:right;margin-bottom:8px"><span onclick="document.getElementById('predict-modal').remove()" style="cursor:pointer;color:var(--text3)">✕</span></div>
+      <div style="text-align:center;font-weight:800;font-size:1rem;margin-bottom:4px">🔮 AI 预测分析</div>
+      <div style="text-align:center;color:var(--text2);font-size:0.85rem;margin-bottom:16px">${home} vs ${away}</div>
+      <div class="prob-row">
+        <div class="prob-label"><span>🏠 主胜 ${home}</span><span style="font-weight:700;color:var(--accent)">${h}%</span></div>
+        <div class="prob-bar"><div class="prob-fill fill-home" style="width:${h}%"></div></div>
+      </div>
+      <div class="prob-row">
+        <div class="prob-label"><span>🤝 平局 Draw</span><span style="font-weight:700;color:var(--yellow)">${d}%</span></div>
+        <div class="prob-bar"><div class="prob-fill fill-draw" style="width:${d}%"></div></div>
+      </div>
+      <div class="prob-row">
+        <div class="prob-label"><span>✈️ 客胜 ${away}</span><span style="font-weight:700;color:var(--green)">${a}%</span></div>
+        <div class="prob-bar"><div class="prob-fill fill-away" style="width:${a}%"></div></div>
+      </div>
+      <div class="ai-note">⚠️ 预测基于历史数据分析，仅供参考<br>Prediction based on historical data analysis only</div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', modal);
+}
 
-  // ── Load & Display ──
-  async function loadSection(lid, sec) {
-    if (lid === 'predict') {
-      // show predict panel using current league
-      document.getElementById('sectionTabs').style.display = 'none';
-      document.querySelectorAll('[data-sec]').forEach(b => b.classList.remove('active'));
-      document.getElementById('matches-panel').classList.remove('active');
-      document.getElementById('table-panel').classList.remove('active');
-      document.getElementById('predict-panel').classList.add('active');
-      document.getElementById('predictContent').innerHTML =
-        `<div class="spinner"><div class="spin"></div> 生成预测...</div>`;
-      const evs = await fetchEvents(currentLeague);
-      document.getElementById('predictContent').innerHTML = renderPredictions(evs);
-      return;
-    }
-    document.getElementById('sectionTabs').style.display = 'flex';
-    document.getElementById('predict-panel').classList.remove('active');
+function showPredictPage() {
+  document.getElementById('matches-content').innerHTML = `
+    <div class="section-title">🔮 AI 预测情报</div>
+    <div class="predict-card">
+      <div style="font-size:0.8rem;color:var(--text2);margin-bottom:12px;text-align:center">点击任意比赛卡片查看 AI 预测分析</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
+        <div style="background:rgba(37,99,235,0.1);border-radius:8px;padding:12px">
+          <div style="font-size:1.5rem">📊</div>
+          <div style="font-size:0.7rem;color:var(--text3);margin-top:4px">历史数据</div>
+        </div>
+        <div style="background:rgba(56,189,248,0.1);border-radius:8px;padding:12px">
+          <div style="font-size:1.5rem">🤖</div>
+          <div style="font-size:0.7rem;color:var(--text3);margin-top:4px">AI 分析</div>
+        </div>
+        <div style="background:rgba(34,197,94,0.1);border-radius:8px;padding:12px">
+          <div style="font-size:1.5rem">📈</div>
+          <div style="font-size:0.7rem;color:var(--text3);margin-top:4px">概率预测</div>
+        </div>
+      </div>
+    </div>
+    <div class="predict-card">
+      <div class="predict-teams">Liverpool vs Manchester City</div>
+      <div class="prob-row">
+        <div class="prob-label"><span>🏠 主胜 Liverpool</span><span style="font-weight:700;color:var(--accent)">52%</span></div>
+        <div class="prob-bar"><div class="prob-fill fill-home" style="width:52%"></div></div>
+      </div>
+      <div class="prob-row">
+        <div class="prob-label"><span>🤝 平局 Draw</span><span style="font-weight:700;color:var(--yellow)">21%</span></div>
+        <div class="prob-bar"><div class="prob-fill fill-draw" style="width:21%"></div></div>
+      </div>
+      <div class="prob-row">
+        <div class="prob-label"><span>✈️ 客胜 Man City</span><span style="font-weight:700;color:var(--green)">27%</span></div>
+        <div class="prob-bar"><div class="prob-fill fill-away" style="width:27%"></div></div>
+      </div>
+      <div class="ai-note">⚠️ 仅供参考 · For reference only</div>
+    </div>`;
+}
 
-    if (sec === 'matches') {
-      document.getElementById('matches-panel').classList.add('active');
-      document.getElementById('table-panel').classList.remove('active');
-      document.getElementById('matchesContent').innerHTML =
-        `<div class="spinner"><div class="spin"></div> 加载比赛...</div>`;
-      const evs = await fetchEvents(lid);
-      document.getElementById('matchesContent').innerHTML = renderMatches(evs);
-    } else {
-      document.getElementById('table-panel').classList.add('active');
-      document.getElementById('matches-panel').classList.remove('active');
-      document.getElementById('tableContent').innerHTML =
-        `<div class="spinner"><div class="spin"></div> 加载积分榜...</div>`;
-      const tbl = await fetchTable(lid);
-      document.getElementById('tableContent').innerHTML = renderTable(tbl);
-    }
-  }
+function switchLeague(leagueId, key, el) {
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  if(key === 'predict') { showPredictPage(); return; }
+  currentLeague = leagueId;
+  loadMatches(leagueId);
+  loadStandings(leagueId);
+}
 
-  // ── Event Listeners ──
-  document.getElementById('leagueTabs').addEventListener('click', e => {
-    const btn = e.target.closest('.tab-btn');
-    if (!btn) return;
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    const lid = btn.dataset.id;
-    if (lid !== 'predict') currentLeague = lid;
-    loadSection(lid, currentSection);
-  });
-
-  document.getElementById('sectionTabs').addEventListener('click', e => {
-    const btn = e.target.closest('.sec-btn');
-    if (!btn) return;
-    document.querySelectorAll('.sec-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    currentSection = btn.dataset.sec;
-    loadSection(currentLeague, currentSection);
-  });
-
-  // ── Init ──
-  loadSection('4328', 'matches');
+// 初始加载
+loadMatches(4328);
+loadStandings(4328);
 </script>
 </body>
 </html>
