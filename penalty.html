@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>⚽ 点球大战</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--bg:#0a1628;--card:#0d1b2e;--border:#1a3050;--blue:#2563eb;--accent:#38bdf8;--text:#e2e8f0;--text2:#94a3b8;--green:#22c55e;--red:#ef4444;--yellow:#f59e0b;--gold:#f59e0b}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;overflow-x:hidden}
+.header{width:100%;background:linear-gradient(135deg,#0a1628,#0f2044);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;justify-content:space-between}
+.logo h1{font-size:1.1rem;font-weight:800;background:linear-gradient(90deg,#38bdf8,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo p{font-size:0.6rem;color:var(--text2)}
+.back-btn{font-size:0.75rem;color:var(--accent);text-decoration:none;background:rgba(56,189,248,0.1);padding:5px 12px;border-radius:20px;border:1px solid rgba(56,189,248,0.2)}
+.game-wrap{width:100%;max-width:480px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:14px}
+
+/* STATS BAR */
+.stats-bar{width:100%;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.stat-box{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center}
+.stat-num{font-size:1.6rem;font-weight:900}
+.stat-label{font-size:0.6rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px}
+.gold{color:var(--gold)}
+.gn{color:var(--green)}
+.rd{color:var(--red)}
+
+/* PITCH */
+.pitch-wrap{position:relative;width:100%;aspect-ratio:4/3;background:linear-gradient(180deg,#1a4a1a 0%,#1e5c1e 40%,#1a4a1a 100%);border-radius:16px;overflow:hidden;border:2px solid #2d7a2d;box-shadow:0 0 40px rgba(0,0,0,0.5)}
+/* Field lines */
+.field-lines{position:absolute;inset:0;pointer-events:none}
+/* Goal */
+.goal{position:absolute;top:6%;left:50%;transform:translateX(-50%);width:50%;height:22%;border:3px solid rgba(255,255,255,0.8);border-bottom:none;background:rgba(255,255,255,0.05);border-radius:4px 4px 0 0}
+/* Goal zones */
+.goal-zones{position:absolute;top:6%;left:50%;transform:translateX(-50%);width:50%;height:22%;display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr;gap:1px;pointer-events:none;opacity:0}
+.goal-zone{background:rgba(56,189,248,0.15);border:1px solid rgba(56,189,248,0.3);transition:background 0.2s;cursor:pointer}
+.goal-zone:hover{background:rgba(56,189,248,0.35)}
+.goal-zones.active{opacity:1;pointer-events:all}
+/* Penalty spot */
+.penalty-spot{position:absolute;bottom:25%;left:50%;transform:translateX(-50%);width:8px;height:8px;background:rgba(255,255,255,0.6);border-radius:50%}
+/* Penalty arc */
+.penalty-box{position:absolute;bottom:15%;left:50%;transform:translateX(-50%);width:55%;height:20%;border:2px solid rgba(255,255,255,0.3);border-top:none}
+/* Ball */
+.ball{position:absolute;bottom:22%;left:50%;transform:translateX(-50%);width:32px;height:32px;font-size:28px;line-height:32px;text-align:center;transition:all 0.6s cubic-bezier(0.25,0.46,0.45,0.94);z-index:10;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5))}
+/* Keeper */
+.keeper{position:absolute;top:26%;left:50%;transform:translateX(-50%);font-size:36px;transition:all 0.4s ease;z-index:5;line-height:1}
+/* Result overlay */
+.result-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:20;opacity:0;pointer-events:none;transition:opacity 0.3s}
+.result-overlay.show{opacity:1}
+.result-text{font-size:3rem;font-weight:900;text-shadow:0 0 30px currentColor;animation:popIn 0.4s cubic-bezier(0.34,1.56,0.64,1)}
+@keyframes popIn{from{transform:scale(0)}to{transform:scale(1)}}
+.goal-text{color:#22c55e;text-shadow:0 0 30px #22c55e}
+.miss-text{color:#ef4444;text-shadow:0 0 30px #ef4444}
+/* Crowd */
+.crowd{position:absolute;bottom:0;left:0;right:0;height:12%;background:linear-gradient(transparent,rgba(0,0,0,0.3));display:flex;align-items:flex-end;justify-content:center;gap:4px;padding-bottom:4px;font-size:1rem}
+
+/* CONTROLS */
+.controls{width:100%}
+.shoot-label{text-align:center;font-size:0.8rem;color:var(--text2);margin-bottom:10px;font-weight:600}
+.direction-grid{display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr;gap:8px}
+.dir-btn{background:var(--card);border:2px solid var(--border);border-radius:12px;padding:14px 8px;text-align:center;cursor:pointer;transition:all 0.15s;user-select:none;-webkit-user-select:none}
+.dir-btn:active{transform:scale(0.94);background:rgba(37,99,235,0.2);border-color:var(--blue)}
+.dir-btn .icon{font-size:1.4rem}
+.dir-btn .name{font-size:0.65rem;color:var(--text2);margin-top:2px}
+.dir-btn.disabled{opacity:0.3;pointer-events:none}
+
+/* ROUND INDICATOR */
+.round-row{display:flex;gap:8px;justify-content:center}
+.round-dot{width:28px;height:28px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:0.9rem;transition:all 0.3s}
+.round-dot.goal{background:rgba(34,197,94,0.2);border-color:var(--green)}
+.round-dot.miss{background:rgba(239,68,68,0.2);border-color:var(--red)}
+.round-dot.current{border-color:var(--accent);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(56,189,248,0.4)}50%{box-shadow:0 0 0 6px rgba(56,189,248,0)}}
+
+/* GAME OVER */
+.gameover{width:100%;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;text-align:center;display:none}
+.gameover.show{display:block}
+.gameover-title{font-size:1.5rem;font-weight:900;margin-bottom:4px}
+.gameover-score{font-size:3rem;font-weight:900;color:var(--accent);margin:10px 0}
+.gameover-msg{font-size:0.85rem;color:var(--text2);margin-bottom:16px}
+.play-again{width:100%;padding:14px;background:linear-gradient(135deg,var(--blue),#1d4ed8);border:none;border-radius:12px;color:#fff;font-size:1rem;font-weight:700;cursor:pointer;transition:all 0.2s}
+.play-again:hover{transform:translateY(-2px);box-shadow:0 4px 20px rgba(37,99,235,0.4)}
+
+/* POWER BAR */
+.power-wrap{width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px}
+.power-label{font-size:0.7rem;color:var(--text2);white-space:nowrap}
+.power-bar-bg{flex:1;height:8px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden}
+.power-bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#22c55e,#f59e0b,#ef4444);width:0%;transition:width 0.05s linear}
+.power-val{font-size:0.75rem;font-weight:700;color:var(--accent);width:36px;text-align:right}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <h1>⚽ 点球大战</h1>
+    <p>Penalty Shootout · ហ្គេមបាល់ទាត់</p>
+  </div>
+  <a href="index.html" class="back-btn">← 返回</a>
+</div>
+
+<div class="game-wrap">
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stat-box"><div class="stat-num gold" id="totalScore">0</div><div class="stat-label">🏆 总分</div></div>
+    <div class="stat-box"><div class="stat-num gn" id="goalCount">0</div><div class="stat-label">⚽ 进球</div></div>
+    <div class="stat-box"><div class="stat-num rd" id="missCount">0</div><div class="stat-label">🧤 扑救</div></div>
+  </div>
+
+  <!-- Round dots -->
+  <div class="round-row" id="roundDots"></div>
+
+  <!-- Pitch -->
+  <div class="pitch-wrap" id="pitch">
+    <!-- Field lines SVG -->
+    <svg class="field-lines" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+      <rect x="120" y="45" width="160" height="60" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+      <line x1="0" y1="200" x2="400" y2="200" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+      <circle cx="200" cy="230" r="40" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+    </svg>
+    <div class="goal"></div>
+    <div class="goal-zones active" id="goalZones">
+      <div class="goal-zone" data-dir="top-left" onclick="shoot('top-left')"></div>
+      <div class="goal-zone" data-dir="top-center" onclick="shoot('top-center')"></div>
+      <div class="goal-zone" data-dir="top-right" onclick="shoot('top-right')"></div>
+      <div class="goal-zone" data-dir="bot-left" onclick="shoot('bot-left')"></div>
+      <div class="goal-zone" data-dir="bot-center" onclick="shoot('bot-center')"></div>
+      <div class="goal-zone" data-dir="bot-right" onclick="shoot('bot-right')"></div>
+    </div>
+    <div class="penalty-box"></div>
+    <div class="penalty-spot"></div>
+    <div class="ball" id="ball">⚽</div>
+    <div class="keeper" id="keeper">🧤</div>
+    <div class="result-overlay" id="resultOverlay">
+      <div class="result-text" id="resultText"></div>
+    </div>
+    <div class="crowd">👥👥👥👥👥👥👥👥</div>
+  </div>
+
+  <!-- Power bar -->
+  <div class="power-wrap" id="powerWrap">
+    <span class="power-label">⚡ 力量</span>
+    <div class="power-bar-bg"><div class="power-bar-fill" id="powerFill"></div></div>
+    <span class="power-val" id="powerVal">0%</span>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls" id="controls">
+    <div class="shoot-label">👆 点击球门区域射门！</div>
+    <div class="direction-grid">
+      <div class="dir-btn" onclick="shoot('top-left')"><div class="icon">↖️</div><div class="name">左上</div></div>
+      <div class="dir-btn" onclick="shoot('top-center')"><div class="icon">⬆️</div><div class="name">正上</div></div>
+      <div class="dir-btn" onclick="shoot('top-right')"><div class="icon">↗️</div><div class="name">右上</div></div>
+      <div class="dir-btn" onclick="shoot('bot-left')"><div class="icon">↙️</div><div class="name">左下</div></div>
+      <div class="dir-btn" onclick="shoot('bot-center')"><div class="icon">⬇️</div><div class="name">正下</div></div>
+      <div class="dir-btn" onclick="shoot('bot-right')"><div class="icon">↘️</div><div class="name">右下</div></div>
+    </div>
+  </div>
+
+  <!-- Game Over -->
+  <div class="gameover" id="gameover">
+    <div class="gameover-title" id="gameoverTitle">比赛结束！</div>
+    <div class="gameover-score" id="gameoverScore">0/5</div>
+    <div class="gameover-msg" id="gameoverMsg">继续加油！</div>
+    <button class="play-again" onclick="startGame()">🔄 再来一次 Play Again</button>
+  </div>
+</div>
+
+<script>
+const TOTAL_ROUNDS = 5;
+const DIRS = ['top-left','top-center','top-right','bot-left','bot-center','bot-right'];
+const DIR_POS = {
+  'top-left':    {bx:'20%', by:'12%'},
+  'top-center':  {bx:'50%', by:'10%'},
+  'top-right':   {bx:'80%', by:'12%'},
+  'bot-left':    {bx:'20%', by:'24%'},
+  'bot-center':  {bx:'50%', by:'26%'},
+  'bot-right':   {bx:'80%', by:'24%'},
+};
+const KEEPER_POS = {
+  'top-left':    {x:'25%',y:'18%'},
+  'top-center':  {x:'50%',y:'14%'},
+  'top-right':   {x:'75%',y:'18%'},
+  'bot-left':    {x:'25%',y:'24%'},
+  'bot-center':  {x:'50%',y:'22%'},
+  'bot-right':   {x:'75%',y:'24%'},
+};
+
+let round=0, goals=0, misses=0, totalScore=0, shooting=false;
+let powerInterval=null, power=0, powerDir=1;
+let stats = JSON.parse(localStorage.getItem('penalty_stats')||'{"total":0,"goals":0,"games":0}');
+
+function startGame(){
+  round=0; goals=0; misses=0;
+  document.getElementById('gameover').classList.remove('show');
+  document.getElementById('controls').querySelectorAll('.dir-btn').forEach(b=>b.classList.remove('disabled'));
+  resetBall();
+  resetKeeper();
+  renderDots();
+  startPower();
+  enableControls(true);
+}
+
+function startPower(){
+  power=0; powerDir=1;
+  clearInterval(powerInterval);
+  powerInterval=setInterval(()=>{
+    power+=powerDir*3;
+    if(power>=100){power=100;powerDir=-1;}
+    if(power<=0){power=0;powerDir=1;}
+    document.getElementById('powerFill').style.width=power+'%';
+    document.getElementById('powerVal').textContent=power+'%';
+  },40);
+}
+
+function renderDots(){
+  const wrap=document.getElementById('roundDots');
+  wrap.innerHTML='';
+  for(let i=0;i<TOTAL_ROUNDS;i++){
+    const dot=document.createElement('div');
+    dot.className='round-dot'+(i===round?' current':'');
+    if(i<round) dot.textContent=i<goals?'⚽':'❌';
+    wrap.appendChild(dot);
+  }
+}
+
+function resetBall(){
+  const ball=document.getElementById('ball');
+  ball.style.transition='none';
+  ball.style.left='50%';
+  ball.style.bottom='22%';
+  ball.style.transform='translateX(-50%)';
+  ball.style.fontSize='28px';
+  ball.style.opacity='1';
+}
+
+function resetKeeper(){
+  const keeper=document.getElementById('keeper');
+  keeper.style.transition='none';
+  keeper.style.left='50%';
+  keeper.style.top='26%';
+  keeper.style.transform='translateX(-50%)';
+}
+
+function enableControls(on){
+  document.getElementById('goalZones').className='goal-zones'+(on?' active':'');
+  document.querySelectorAll('.dir-btn').forEach(b=>{
+    b.className='dir-btn'+(on?'':' disabled');
+  });
+}
+
+function getKeeperDir(){
+  // 守门员随机选方向，有时会猜对（25%概率）
+  return DIRS[Math.floor(Math.random()*DIRS.length)];
+}
+
+function shoot(dir){
+  if(shooting)return;
+  shooting=true;
+  clearInterval(powerInterval);
+  enableControls(false);
+
+  const pwr=power;
+  const keeperDir=getKeeperDir();
+  const isGoal = dir!==keeperDir || pwr>85; // 力量大时能破防
+
+  // 移动守门员
+  const keeper=document.getElementById('keeper');
+  const kp=KEEPER_POS[keeperDir];
+  keeper.style.transition='all 0.35s ease';
+  keeper.style.left=kp.x;
+  keeper.style.top=kp.y;
+  keeper.style.transform='translateX(-50%)';
+
+  // 移动球
+  const ball=document.getElementById('ball');
+  const bp=DIR_POS[dir];
+  setTimeout(()=>{
+    ball.style.transition='all 0.5s cubic-bezier(0.25,0.46,0.45,0.94)';
+    ball.style.left=bp.bx;
+    ball.style.bottom=bp.by;
+    ball.style.fontSize='14px';
+    ball.style.transform='translateX(-50%) rotate(720deg)';
+  },100);
+
+  // Show result
+  setTimeout(()=>{
+    const overlay=document.getElementById('resultOverlay');
+    const text=document.getElementById('resultText');
+    if(isGoal){
+      goals++;
+      totalScore+=pwr>85?150:100;
+      text.className='result-text goal-text';
+      text.textContent='⚽ GOAL!';
+    } else {
+      misses++;
+      text.className='result-text miss-text';
+      text.textContent='🧤 SAVED!';
+    }
+    overlay.classList.add('show');
+
+    // Update stats display
+    document.getElementById('goalCount').textContent=goals;
+    document.getElementById('missCount').textContent=misses;
+    document.getElementById('totalScore').textContent=totalScore;
+
+    // Update round dots
+    round++;
+    const dots=document.getElementById('roundDots').children;
+    if(dots[round-1]){
+      dots[round-1].className='round-dot '+(isGoal?'goal':'miss');
+      dots[round-1].textContent=isGoal?'⚽':'❌';
+    }
+    if(round<TOTAL_ROUNDS && dots[round]){
+      dots[round].className='round-dot current';
+    }
+
+    setTimeout(()=>{
+      overlay.classList.remove('show');
+      if(round>=TOTAL_ROUNDS){
+        endGame();
+      } else {
+        resetBall();
+        resetKeeper();
+        shooting=false;
+        setTimeout(()=>{
+          enableControls(true);
+          startPower();
+        },200);
+      }
+    },1200);
+  },700);
+}
+
+function endGame(){
+  shooting=false;
+  clearInterval(powerInterval);
+
+  // Save stats
+  stats.total+=totalScore;
+  stats.goals+=goals;
+  stats.games+=1;
+  localStorage.setItem('penalty_stats',JSON.stringify(stats));
+
+  const title=document.getElementById('gameoverTitle');
+  const score=document.getElementById('gameoverScore');
+  const msg=document.getElementById('gameoverMsg');
+  score.textContent=goals+'/'+TOTAL_ROUNDS;
+  if(goals===5){title.textContent='🏆 完美！满分！';msg.textContent='你是点球之王！Penalty King! 👑';}
+  else if(goals>=4){title.textContent='🌟 太棒了！';msg.textContent='继续保持！Keep it up!';}
+  else if(goals>=3){title.textContent='✅ 不错！';msg.textContent='还可以更好！You can do better!';}
+  else if(goals>=2){title.textContent='😅 加油！';msg.textContent='多多练习！Practice more!';}
+  else{title.textContent='😔 惨败...';msg.textContent='别放弃！Don\'t give up!';}
+
+  score.style.color=goals>=3?'var(--green)':goals>=2?'var(--yellow)':'var(--red)';
+  setTimeout(()=>document.getElementById('gameover').classList.add('show'),300);
+}
+
+// Start!
+startGame();
+</script>
+</body>
+</html>
