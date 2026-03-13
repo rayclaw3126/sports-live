@@ -1,0 +1,25 @@
+{
+  "name": "Sports Live - Football Games",
+  "short_name": "Sports Live",
+  "description": "体育即时比分 + 迷你游戏 | Football Scores & Mini Games",
+  "start_url": "/sports-live/hub.html",
+  "display": "standalone",
+  "background_color": "#060d1a",
+  "theme_color": "#2563eb",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["sports", "games", "entertainment"],
+  "lang": "zh",
+  "dir": "ltr"
+}
