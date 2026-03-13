@@ -71,6 +71,12 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;mi
 .free-spin-badge{background:linear-gradient(135deg,#7c3aed,#4c1d95);border:1px solid #a855f7;border-radius:20px;padding:4px 12px;font-size:0.7rem;font-weight:700;color:#e9d5ff;display:none}
 .free-spin-badge.show{display:inline-block}
 </style>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sports Live">
+  <link rel="apple-touch-icon" href="icon-192.png">
 </head>
 <body>
 
@@ -344,6 +350,12 @@ function showConfetti(big){
 // Init
 initReels();
 updateDisplay();
+</script>
+
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
 </script>
 </body>
 </html>
