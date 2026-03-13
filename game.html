@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎯 猜比分 - Sports Live</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#060d1a;--card:#0d1b2e;--card2:#111f35;--border:#1a3050;--blue:#2563eb;--accent:#38bdf8;--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;--green:#22c55e;--red:#ef4444;--yellow:#f59e0b;--gold:#f59e0b}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;min-height:100vh}
+.header{background:linear-gradient(135deg,#0a1628,#0f2044);border-bottom:1px solid var(--border);padding:12px 16px}
+.header-inner{max-width:600px;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:8px}
+.logo h1{font-size:1.1rem;font-weight:800;background:linear-gradient(90deg,#38bdf8,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo p{font-size:0.62rem;color:var(--text3)}
+.back-btn{font-size:0.75rem;color:var(--accent);text-decoration:none;background:rgba(56,189,248,0.1);padding:5px 12px;border-radius:20px;border:1px solid rgba(56,189,248,0.2)}
+.main{max-width:600px;margin:0 auto;padding:16px}
+/* SCORE BOARD */
+.scoreboard{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px}
+.score-stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center}
+.score-stat .num{font-size:1.8rem;font-weight:900}
+.score-stat .label{font-size:0.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+.pts-num{color:var(--gold)}
+.correct-num{color:var(--green)}
+.played-num{color:var(--accent)}
+/* MATCH CARD */
+.game-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px;transition:all 0.2s}
+.game-card.answered{border-color:var(--border);opacity:0.7}
+.game-card.correct{border-color:var(--green);background:rgba(34,197,94,0.05)}
+.game-card.wrong{border-color:var(--red);background:rgba(239,68,68,0.05)}
+.card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.league-tag{font-size:0.65rem;color:var(--text3);font-weight:600;text-transform:uppercase}
+.result-tag{font-size:0.7rem;font-weight:700;padding:3px 10px;border-radius:10px}
+.tag-correct{background:rgba(34,197,94,0.2);color:var(--green)}
+.tag-wrong{background:rgba(239,68,68,0.2);color:var(--red)}
+.tag-pending{background:rgba(245,158,11,0.2);color:var(--yellow)}
+.teams-row{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.team-block{flex:1;text-align:center}
+.team-badge{width:40px;height:40px;object-fit:contain;margin-bottom:4px}
+.team-name{font-size:0.8rem;font-weight:700}
+.vs-box{min-width:60px;text-align:center}
+.real-score{font-size:1.5rem;font-weight:900;color:#fff}
+.real-score.hidden-score{font-size:0.75rem;color:var(--text3)}
+/* INPUT */
+.guess-row{display:flex;align-items:center;gap:8px;justify-content:center}
+.guess-label{font-size:0.72rem;color:var(--text2);text-align:center;margin-bottom:8px}
+.score-input{width:56px;height:44px;background:var(--card2);border:2px solid var(--border);border-radius:10px;color:#fff;font-size:1.3rem;font-weight:800;text-align:center;outline:none;transition:border-color 0.2s}
+.score-input:focus{border-color:var(--blue)}
+.score-sep{font-size:1.4rem;font-weight:900;color:var(--text3)}
+.submit-btn{width:100%;margin-top:12px;padding:11px;background:linear-gradient(135deg,var(--blue),#1d4ed8);border:none;border-radius:10px;color:#fff;font-size:0.85rem;font-weight:700;cursor:pointer;transition:all 0.2s;letter-spacing:0.5px}
+.submit-btn:hover{transform:translateY(-1px);box-shadow:0 4px 15px rgba(37,99,235,0.4)}
+.submit-btn:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+.my-guess{font-size:0.72rem;color:var(--text3);text-align:center;margin-top:8px}
+.my-guess span{color:var(--accent);font-weight:700}
+/* POINTS POPUP */
+.popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);background:var(--card);border:2px solid var(--green);border-radius:20px;padding:24px 32px;text-align:center;z-index:999;transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1)}
+.popup.show{transform:translate(-50%,-50%) scale(1)}
+.popup-icon{font-size:3rem}
+.popup-title{font-size:1.2rem;font-weight:800;margin:8px 0 4px}
+.popup-pts{font-size:2rem;font-weight:900;color:var(--gold)}
+.popup-sub{font-size:0.75rem;color:var(--text3);margin-top:4px}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:998;display:none}
+/* LEADERBOARD */
+.section-title{font-size:0.75rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin:20px 0 12px;display:flex;align-items:center;gap:8px}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.history-row{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;font-size:0.78rem}
+.history-match{font-weight:600}
+.history-detail{color:var(--text3);font-size:0.68rem;margin-top:2px}
+.history-pts{font-weight:800;font-size:0.9rem}
+.pts-exact{color:var(--gold)}
+.pts-result{color:var(--green)}
+.pts-wrong{color:var(--red)}
+/* LOADING */
+.loading{text-align:center;padding:40px;color:var(--text3)}
+.spinner{font-size:2rem;animation:spin 1s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* EMPTY */
+.empty{text-align:center;padding:40px;color:var(--text3)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="logo">
+      <div>
+        <h1>🎯 猜比分</h1>
+        <p>Score Predictor · ទាយពិន្ទុ</p>
+      </div>
+    </div>
+    <a href="index.html" class="back-btn">⚽ 比分</a>
+  </div>
+</div>
+
+<div class="main">
+  <!-- Stats -->
+  <div class="scoreboard">
+    <div class="score-stat"><div class="num pts-num" id="totalPts">0</div><div class="label">🏆 积分</div></div>
+    <div class="score-stat"><div class="num correct-num" id="correctCount">0</div><div class="label">✅ 猜中</div></div>
+    <div class="score-stat"><div class="num played-num" id="playedCount">0</div><div class="label">🎮 参与</div></div>
+  </div>
+
+  <div class="section-title">🎮 今日比赛 — 猜猜结果！</div>
+
+  <div id="games-list">
+    <div class="loading"><div class="spinner">⚽</div><p style="margin-top:10px">加载比赛...</p></div>
+  </div>
+
+  <div class="section-title">📜 我的猜测记录</div>
+  <div id="history-list"><div class="empty">还没有猜测记录</div></div>
+</div>
+
+<!-- Popup -->
+<div class="overlay" id="overlay" onclick="closePopup()"></div>
+<div class="popup" id="popup">
+  <div class="popup-icon" id="popup-icon">🎉</div>
+  <div class="popup-title" id="popup-title">完美预测！</div>
+  <div class="popup-pts" id="popup-pts">+100</div>
+  <div class="popup-sub" id="popup-sub">继续加油！</div>
+</div>
+
+<script>
+const LEAGUES = [
+  {id:4328,name:'英超',flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿'},
+  {id:4335,name:'西甲',flag:'🇪🇸'},
+  {id:4332,name:'意甲',flag:'🇮🇹'},
+];
+
+let guesses = JSON.parse(localStorage.getItem('sg_guesses')||'{}');
+let stats = JSON.parse(localStorage.getItem('sg_stats')||'{"pts":0,"correct":0,"played":0}');
+let allMatches = [];
+
+function saveData(){
+  localStorage.setItem('sg_guesses',JSON.stringify(guesses));
+  localStorage.setItem('sg_stats',JSON.stringify(stats));
+}
+
+function updateStats(){
+  document.getElementById('totalPts').textContent = stats.pts;
+  document.getElementById('correctCount').textContent = stats.correct;
+  document.getElementById('playedCount').textContent = stats.played;
+}
+
+function showPopup(icon,title,pts,sub){
+  document.getElementById('popup-icon').textContent=icon;
+  document.getElementById('popup-title').textContent=title;
+  document.getElementById('popup-pts').textContent=pts;
+  document.getElementById('popup-sub').textContent=sub;
+  document.getElementById('overlay').style.display='block';
+  document.getElementById('popup').classList.add('show');
+  setTimeout(closePopup,2500);
+}
+
+function closePopup(){
+  document.getElementById('popup').classList.remove('show');
+  document.getElementById('overlay').style.display='none';
+}
+
+function submitGuess(matchId,homeGuess,awayGuess,realHome,realAway,cardEl){
+  const hg=parseInt(homeGuess),ag=parseInt(awayGuess);
+  if(isNaN(hg)||isNaN(ag)||hg<0||ag<0||hg>20||ag>20){
+    alert('请输入有效比分（0-20）');return;
+  }
+
+  const rh=parseInt(realHome),ra=parseInt(realAway);
+  let pts=0,resultType='wrong';
+
+  if(hg===rh&&ag===ra){
+    pts=100;resultType='exact';
+    showPopup('🎯','完美预测！完全正确！','+100分','太厉害了！Perfect!');
+  } else {
+    const guessResult = hg>ag?'H':hg<ag?'A':'D';
+    const realResult = rh>ra?'H':rh<ra?'A':'D';
+    if(guessResult===realResult){
+      pts=30;resultType='result';
+      showPopup('✅','猜中胜负！','+30分','继续加油！Keep going!');
+    } else {
+      pts=0;resultType='wrong';
+      showPopup('❌','没猜中...','0分','下次加油！Try again!');
+    }
+  }
+
+  guesses[matchId]={home:hg,away:ag,pts,resultType};
+  stats.pts+=pts;
+  stats.played+=1;
+  if(resultType!=='wrong')stats.correct+=1;
+  saveData();
+  updateStats();
+  renderCard(matchId,cardEl);
+  renderHistory();
+}
+
+function renderCard(matchId,cardEl){
+  const g=guesses[matchId];
+  const m=allMatches.find(x=>x.idEvent===matchId);
+  if(!m)return;
+  const rh=m.intHomeScore,ra=m.intAwayScore;
+
+  cardEl.className='game-card answered '+(g.resultType==='exact'||g.resultType==='result'?'correct':'wrong');
+  const tagClass=g.resultType==='exact'?'tag-correct':g.resultType==='result'?'tag-correct':'tag-wrong';
+  const tagText=g.resultType==='exact'?'🎯 完美 +100':g.resultType==='result'?'✅ 猜中 +30':'❌ 未中 +0';
+
+  cardEl.querySelector('.result-tag').className=`result-tag ${tagClass}`;
+  cardEl.querySelector('.result-tag').textContent=tagText;
+  cardEl.querySelector('.real-score').className='real-score';
+  cardEl.querySelector('.real-score').textContent=`${rh} - ${ra}`;
+  const guessRow=cardEl.querySelector('.guess-area');
+  if(guessRow)guessRow.innerHTML=`<div class="my-guess">你猜的：<span>${g.home} - ${g.away}</span></div>`;
+}
+
+function renderHistory(){
+  const entries=Object.entries(guesses);
+  if(!entries.length){
+    document.getElementById('history-list').innerHTML='<div class="empty">还没有猜测记录</div>';
+    return;
+  }
+  document.getElementById('history-list').innerHTML=entries.map(([id,g])=>{
+    const m=allMatches.find(x=>x.idEvent===id);
+    if(!m)return'';
+    const cls=g.resultType==='exact'?'pts-exact':g.resultType==='result'?'pts-result':'pts-wrong';
+    return`<div class="history-row">
+      <div><div class="history-match">${m.strHomeTeam} vs ${m.strAwayTeam}</div>
+      <div class="history-detail">你猜 ${g.home}-${g.away} | 实际 ${m.intHomeScore}-${m.intAwayScore}</div></div>
+      <div class="history-pts ${cls}">${g.pts>0?'+':''}${g.pts}分</div>
+    </div>`;
+  }).join('');
+}
+
+async function loadGames(){
+  let matches=[];
+  for(const lg of LEAGUES){
+    try{
+      const r=await fetch(`https://www.thesportsdb.com/api/v1/json/3/eventspastleague.php?id=${lg.id}`);
+      const d=await r.json();
+      const evs=(d.events||[]).filter(e=>e.intHomeScore!==null&&e.intHomeScore!=='').slice(-5);
+      evs.forEach(e=>{e._league=lg;});
+      matches=matches.concat(evs);
+    }catch(e){}
+  }
+  allMatches=matches;
+
+  if(!matches.length){
+    document.getElementById('games-list').innerHTML='<div class="empty">暂无比赛数据</div>';
+    return;
+  }
+
+  document.getElementById('games-list').innerHTML=matches.map(m=>{
+    const id=m.idEvent;
+    const g=guesses[id];
+    const rh=m.intHomeScore,ra=m.intAwayScore;
+    const badge1=m.strHomeTeamBadge?`<img class="team-badge" src="${m.strHomeTeamBadge}/preview" onerror="this.style.display='none'">`:
+      `<div style="font-size:2rem;margin-bottom:4px">🏠</div>`;
+    const badge2=m.strAwayTeamBadge?`<img class="team-badge" src="${m.strAwayTeamBadge}/preview" onerror="this.style.display='none'">`:
+      `<div style="font-size:2rem;margin-bottom:4px">✈️</div>`;
+
+    let statusTag='',guessArea='';
+    if(g){
+      const tc=g.resultType==='exact'||g.resultType==='result'?'tag-correct':'tag-wrong';
+      const tt=g.resultType==='exact'?'🎯 完美 +100':g.resultType==='result'?'✅ 猜中 +30':'❌ 未中 +0';
+      statusTag=`<span class="result-tag ${tc}">${tt}</span>`;
+      guessArea=`<div class="my-guess">你猜的：<span>${g.home} - ${g.away}</span></div>`;
+    } else {
+      statusTag=`<span class="result-tag tag-pending">🎯 猜猜看</span>`;
+      guessArea=`<div class="guess-label">输入你的预测比分：</div>
+        <div class="guess-row">
+          <input class="score-input" id="h_${id}" type="number" min="0" max="20" placeholder="0">
+          <span class="score-sep">-</span>
+          <input class="score-input" id="a_${id}" type="number" min="0" max="20" placeholder="0">
+        </div>
+        <button class="submit-btn" onclick="submitGuess('${id}',document.getElementById('h_${id}').value,document.getElementById('a_${id}').value,'${rh}','${ra}',this.closest('.game-card'))">🎯 提交预测 Submit</button>`;
+    }
+
+    return`<div class="game-card ${g?(g.resultType!=='wrong'?'correct':'wrong'):''}" id="card_${id}">
+      <div class="card-top">
+        <span class="league-tag">${m._league.flag} ${m._league.name} · R${m.intRound||'-'}</span>
+        ${statusTag}
+      </div>
+      <div class="teams-row">
+        <div class="team-block">${badge1}<div class="team-name">${m.strHomeTeam}</div></div>
+        <div class="vs-box">
+          <div class="real-score ${g?'':'hidden-score'}">${g?rh+' - '+ra:'? - ?'}</div>
+          <div style="font-size:0.6rem;color:var(--text3);margin-top:2px">${m.dateEvent||''}</div>
+        </div>
+        <div class="team-block">${badge2}<div class="team-name">${m.strAwayTeam}</div></div>
+      </div>
+      <div class="guess-area">${guessArea}</div>
+    </div>`;
+  }).join('');
+
+  renderHistory();
+}
+
+updateStats();
+loadGames();
+</script>
+</body>
+</html>
