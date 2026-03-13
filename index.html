@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚽ Sports Live</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body{background:#0f172a;color:#e2e8f0;font-family:sans-serif}
+  .card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:16px;margin-bottom:10px}
+  .score{font-size:1.4rem;font-weight:800;color:#f1f5f9;min-width:80px;text-align:center}
+  .tab{cursor:pointer;padding:8px 14px;border-radius:8px;font-size:0.85rem;background:#1e293b;border:1px solid #334155}
+  .tab.active{background:#3b82f6;border-color:#3b82f6;color:white}
+  .spin{animation:spin 1s linear infinite;display:inline-block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="max-w-xl mx-auto">
+  <!-- Header -->
+  <div class="bg-gradient-to-r from-blue-900 to-slate-900 px-4 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <span class="text-2xl">⚽</span>
+      <div>
+        <div class="font-bold text-white">Sports Live</div>
+        <div class="text-xs text-blue-300">即时比分 Live Scores</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-1">
+      <div style="width:8px;height:8px;background:#ef4444;border-radius:50%;animation:spin 1s infinite"></div>
+      <span class="text-red-400 text-xs font-bold">LIVE</span>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex gap-2 p-3 overflow-x-auto">
+    <button class="tab active" onclick="load(4328,'epl',this)">🏴󠁧󠁢󠁥󠁮󠁧󠁿 英超</button>
+    <button class="tab" onclick="load(4335,'laliga',this)">🇪🇸 西甲</button>
+    <button class="tab" onclick="load(4332,'seriea',this)">🇮🇹 意甲</button>
+    <button class="tab" onclick="load(4331,'bund',this)">🇩🇪 德甲</button>
+    <button class="tab" onclick="load(4334,'ligue1',this)">🇫🇷 法甲</button>
+  </div>
+
+  <!-- Content -->
+  <div class="px-3" id="content">
+    <div class="text-center py-10 text-slate-400">
+      <div class="spin text-3xl">⚽</div>
+      <p class="mt-2 text-sm">加载中...</p>
+    </div>
+  </div>
+</div>
+
+<script>
+async function load(leagueId, key, btn) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('content').innerHTML = '<div class="text-center py-10 text-slate-400"><div class="spin text-3xl">⚽</div><p class="mt-2 text-sm">加载中...</p></div>';
+  try {
+    const r = await fetch(`https://www.thesportsdb.com/api/v1/json/3/eventspastleague.php?id=${leagueId}`);
+    const d = await r.json();
+    const events = (d.events||[]).reverse().slice(0,20);
+    if(!events.length){document.getElementById('content').innerHTML='<p class="text-center text-slate-400 py-8">暂无数据</p>';return;}
+    let html = '';
+    events.forEach(e=>{
+      const hs = e.intHomeScore??'-';
+      const as = e.intAwayScore??'-';
+      const done = hs!=='-'&&hs!==null;
+      html+=`<div class="card">
+        <div class="flex justify-between items-center mb-1">
+          <span class="text-xs text-slate-400">${e.strLeague||''}</span>
+          <span class="text-xs ${done?'text-green-400':'text-yellow-400'}">${done?'✅ 完场':'🕐 '+e.dateEvent}</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <div class="flex-1 text-right pr-2 font-semibold text-sm">${e.strHomeTeam}</div>
+          <div class="score">${hs} - ${as}</div>
+          <div class="flex-1 text-left pl-2 font-semibold text-sm">${e.strAwayTeam}</div>
+        </div>
+      </div>`;
+    });
+    document.getElementById('content').innerHTML = html;
+  } catch(e) {
+    document.getElementById('content').innerHTML='<p class="text-center text-red-400 py-8">加载失败，请重试</p>';
+  }
+}
+load(4328,'epl',document.querySelector('.tab'));
+</script>
+</body>
+</html>
