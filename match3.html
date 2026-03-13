@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#060d1a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>足球消消乐</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #060d1a;
+      color: #fff;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-x: hidden;
+    }
+
+    /* Top bar */
+    .topbar {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      align-items: center;
+      padding: 10px 14px;
+      gap: 10px;
+    }
+    .back-btn {
+      text-decoration: none;
+      color: #7ecfff;
+      font-size: 22px;
+      line-height: 1;
+      padding: 4px 8px;
+      border-radius: 8px;
+      background: rgba(126,207,255,0.1);
+      border: 1px solid rgba(126,207,255,0.2);
+      transition: background 0.2s;
+    }
+    .back-btn:active { background: rgba(126,207,255,0.25); }
+
+    .title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      flex: 1;
+      text-align: center;
+      background: linear-gradient(90deg, #7ecfff, #a8ff8a);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Stats row */
+    .stats {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      justify-content: space-around;
+      padding: 6px 14px 10px;
+      gap: 8px;
+    }
+    .stat-box {
+      flex: 1;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 8px 6px;
+      text-align: center;
+    }
+    .stat-label {
+      font-size: 10px;
+      color: #8899bb;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    .stat-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      margin-top: 2px;
+    }
+    .stat-value.steps { color: #ffcc44; }
+    .stat-value.score { color: #7ecfff; }
+    .stat-value.best  { color: #a8ff8a; }
+
+    /* Game wrapper */
+    .game-area {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      padding: 0 10px 20px;
+      flex: 1;
+    }
+
+    #gameCanvas {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 16px;
+      display: block;
+      touch-action: none;
+      cursor: pointer;
+    }
+
+    /* Combo overlay */
+    #comboDisplay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 36px;
+      font-weight: 900;
+      color: #ffcc44;
+      text-shadow: 0 0 20px rgba(255,204,68,0.9);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 10;
+      white-space: nowrap;
+    }
+
+    /* Game over overlay */
+    #gameOver {
+      display: none;
+      position: absolute;
+      inset: 0 10px;
+      border-radius: 16px;
+      background: rgba(6,13,26,0.92);
+      backdrop-filter: blur(8px);
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      z-index: 20;
+    }
+    #gameOver.visible { display: flex; }
+    #gameOver h2 {
+      font-size: 32px;
+      font-weight: 900;
+      background: linear-gradient(90deg, #ff6b6b, #ffcc44);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .go-score {
+      font-size: 22px;
+      color: #7ecfff;
+    }
+    .go-best {
+      font-size: 16px;
+      color: #a8ff8a;
+    }
+    .restart-btn {
+      background: linear-gradient(135deg, #1a6fff, #0097ff);
+      color: #fff;
+      border: none;
+      padding: 14px 36px;
+      border-radius: 30px;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(0,150,255,0.4);
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .restart-btn:active { transform: scale(0.96); box-shadow: 0 2px 10px rgba(0,150,255,0.3); }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="back-btn" href="hub.html">←</a>
+  <div class="title">⚽ 足球消消乐</div>
+  <div style="width:44px"></div>
+</div>
+
+<div class="stats">
+  <div class="stat-box">
+    <div class="stat-label">分数</div>
+    <div class="stat-value score" id="scoreDisplay">0</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-label">最高分</div>
+    <div class="stat-value best" id="bestDisplay">0</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-label">剩余步数</div>
+    <div class="stat-value steps" id="stepsDisplay">30</div>
+  </div>
+</div>
+
+<div class="game-area">
+  <canvas id="gameCanvas"></canvas>
+  <div id="comboDisplay"></div>
+  <div id="gameOver">
+    <h2>游戏结束！</h2>
+    <div class="go-score" id="goScore"></div>
+    <div class="go-best" id="goBest"></div>
+    <button class="restart-btn" id="restartBtn">🔄 再来一局</button>
+  </div>
+</div>
+
+<script>
+const GRID = 6;
+const SYMBOLS = ['⚽','🏆','⭐','🥅','🥾','🎯'];
+const BOMB = '💥';
+const COLORS = ['#1a3d6e','#6b3a00','#3a3a00','#1a4a2a','#3d1a00','#3d0d1a'];
+const BOMB_COLOR = '#4a1a00';
+const MAX_STEPS = 30;
+const BASE_SCORE = 30;
+
+let canvas, ctx;
+let grid = [], selected = null;
+let score = 0, bestScore = 0, steps = MAX_STEPS;
+let animating = false;
+let cellSize = 0;
+let floatParticles = [];
+let dropAnim = []; // {col, row, fromY, toY, progress}
+let shrinkAnim = []; // {col, row, progress}
+
+function init() {
+  canvas = document.getElementById('gameCanvas');
+  ctx = canvas.getContext('2d');
+
+  // Resize canvas to square
+  const maxW = Math.min(window.innerWidth - 20, 400);
+  canvas.width = maxW;
+  canvas.height = maxW;
+  cellSize = maxW / GRID;
+
+  bestScore = parseInt(localStorage.getItem('match3_best') || '0');
+  document.getElementById('bestDisplay').textContent = bestScore;
+
+  newGame();
+
+  canvas.addEventListener('click', onTap);
+  canvas.addEventListener('touchstart', onTouch, { passive: false });
+  document.getElementById('restartBtn').addEventListener('click', newGame);
+}
+
+function newGame() {
+  score = 0; steps = MAX_STEPS; selected = null;
+  floatParticles = []; dropAnim = []; shrinkAnim = [];
+  animating = false;
+  document.getElementById('gameOver').classList.remove('visible');
+  updateUI();
+  do {
+    grid = [];
+    for (let r = 0; r < GRID; r++) {
+      grid[r] = [];
+      for (let c = 0; c < GRID; c++) {
+        grid[r][c] = randomSymbol();
+      }
+    }
+  } while (findMatches().length > 0 || !hasValidMoves());
+  drawBoard();
+}
+
+function randomSymbol() {
+  return SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+}
+
+function updateUI() {
+  document.getElementById('scoreDisplay').textContent = score;
+  document.getElementById('bestDisplay').textContent = bestScore;
+  document.getElementById('stepsDisplay').textContent = steps;
+}
+
+// ─── Drawing ────────────────────────────────────────────────────────────────
+
+function drawBoard() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // Background gradient
+  const bg = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+  bg.addColorStop(0, '#0a1628');
+  bg.addColorStop(1, '#060d1a');
+  ctx.fillStyle = bg;
+  roundRect(ctx, 0, 0, canvas.width, canvas.height, 16);
+  ctx.fill();
+
+  for (let r = 0; r < GRID; r++) {
+    for (let c = 0; c < GRID; c++) {
+      const sym = grid[r][c];
+      if (!sym) continue;
+
+      // Check shrink animation
+      let scale = 1;
+      const sa = shrinkAnim.find(a => a.r === r && a.c === c);
+      if (sa) scale = Math.max(0, 1 - sa.progress);
+
+      // Check drop animation — override Y
+      let drawY = r * cellSize;
+      const da = dropAnim.find(a => a.c === c && a.toRow === r);
+      if (da) drawY = da.fromY + (r * cellSize - da.fromY) * easeOut(da.progress);
+
+      drawCell(c, drawY, sym, r === selected?.r && c === selected?.c, scale);
+    }
+  }
+  // Draw particles
+  floatParticles.forEach(p => {
+    ctx.globalAlpha = p.alpha;
+    ctx.font = `bold ${p.size}px sans-serif`;
+    ctx.fillStyle = p.color;
+    ctx.textAlign = 'center';
+    ctx.fillText(p.text, p.x, p.y);
+    ctx.globalAlpha = 1;
+  });
+  ctx.textAlign = 'left';
+}
+
+function drawCell(c, yPx, sym, isSelected, scale = 1) {
+  const x = c * cellSize;
+  const pad = 4;
+  const size = cellSize - pad * 2;
+  const cx = x + cellSize / 2;
+  const cy = yPx + cellSize / 2;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(scale, scale);
+  ctx.translate(-cx, -cy);
+
+  const colorIdx = sym === BOMB ? -1 : SYMBOLS.indexOf(sym);
+  const bg = colorIdx >= 0 ? COLORS[colorIdx] : BOMB_COLOR;
+
+  // Shadow when selected
+  if (isSelected) {
+    ctx.shadowColor = '#7ecfff';
+    ctx.shadowBlur = 14;
+  }
+
+  // Cell bg
+  ctx.fillStyle = bg;
+  roundRect(ctx, x + pad, yPx + pad, size, size, 10);
+  ctx.fill();
+
+  // Selected border
+  if (isSelected) {
+    ctx.strokeStyle = '#7ecfff';
+    ctx.lineWidth = 3;
+    roundRect(ctx, x + pad, yPx + pad, size, size, 10);
+    ctx.stroke();
+  }
+  ctx.shadowBlur = 0;
+
+  // Emoji
+  const fontSize = cellSize * 0.52;
+  ctx.font = `${fontSize}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(sym, cx, cy + 1);
+
+  ctx.restore();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function easeOut(t) {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+// ─── Input ──────────────────────────────────────────────────────────────────
+
+function getCellFromXY(x, y) {
+  const c = Math.floor(x / cellSize);
+  const r = Math.floor(y / cellSize);
+  if (r < 0 || r >= GRID || c < 0 || c >= GRID) return null;
+  return { r, c };
+}
+
+function onTap(e) {
+  if (animating) return;
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const x = (e.clientX - rect.left) * scaleX;
+  const y = (e.clientY - rect.top) * scaleY;
+  handleSelect(getCellFromXY(x, y));
+}
+
+function onTouch(e) {
+  e.preventDefault();
+  if (animating) return;
+  const touch = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const x = (touch.clientX - rect.left) * scaleX;
+  const y = (touch.clientY - rect.top) * scaleY;
+  handleSelect(getCellFromXY(x, y));
+}
+
+function handleSelect(cell) {
+  if (!cell) return;
+  if (!selected) {
+    selected = cell;
+    drawBoard();
+    return;
+  }
+  if (selected.r === cell.r && selected.c === cell.c) {
+    selected = null;
+    drawBoard();
+    return;
+  }
+  // Adjacent?
+  const dr = Math.abs(cell.r - selected.r);
+  const dc = Math.abs(cell.c - selected.c);
+  if ((dr === 1 && dc === 0) || (dr === 0 && dc === 1)) {
+    trySwap(selected, cell);
+  } else {
+    selected = cell;
+    drawBoard();
+  }
+}
+
+// ─── Game Logic ─────────────────────────────────────────────────────────────
+
+function trySwap(a, b) {
+  swap(a, b);
+  const matches = findMatches();
+  if (matches.length > 0) {
+    selected = null;
+    steps--;
+    updateUI();
+    animating = true;
+    processMatches(matches, 1);
+  } else {
+    // Revert
+    swap(a, b);
+    selected = b;
+    drawBoard();
+  }
+}
+
+function swap(a, b) {
+  [grid[a.r][a.c], grid[b.r][b.c]] = [grid[b.r][b.c], grid[a.r][a.c]];
+}
+
+function findMatches() {
+  const matched = new Set();
+  // Horizontal
+  for (let r = 0; r < GRID; r++) {
+    let start = 0;
+    while (start < GRID) {
+      let end = start + 1;
+      while (end < GRID && grid[r][end] === grid[r][start] && grid[r][start] !== BOMB) end++;
+      if (end - start >= 3) {
+        for (let c = start; c < end; c++) matched.add(`${r},${c}`);
+      }
+      start = end;
+    }
+  }
+  // Vertical
+  for (let c = 0; c < GRID; c++) {
+    let start = 0;
+    while (start < GRID) {
+      let end = start + 1;
+      while (end < GRID && grid[end][c] === grid[start][c] && grid[start][c] !== BOMB) end++;
+      if (end - start >= 3) {
+        for (let r = start; r < end; r++) matched.add(`${r},${c}`);
+      }
+      start = end;
+    }
+  }
+  return [...matched].map(k => { const [r, c] = k.split(',').map(Number); return { r, c }; });
+}
+
+function findBombLines() {
+  // Returns groups of 4+ in a line
+  const bombs = [];
+  // Horizontal
+  for (let r = 0; r < GRID; r++) {
+    let start = 0;
+    while (start < GRID) {
+      let end = start + 1;
+      while (end < GRID && grid[r][end] === grid[r][start] && grid[r][start] !== BOMB) end++;
+      if (end - start >= 4) {
+        bombs.push({ r, cStart: start, cEnd: end - 1, dir: 'h' });
+      }
+      start = end;
+    }
+  }
+  // Vertical
+  for (let c = 0; c < GRID; c++) {
+    let start = 0;
+    while (start < GRID) {
+      let end = start + 1;
+      while (end < GRID && grid[end][c] === grid[start][c] && grid[start][c] !== BOMB) end++;
+      if (end - start >= 4) {
+        bombs.push({ c, rStart: start, rEnd: end - 1, dir: 'v' });
+      }
+      start = end;
+    }
+  }
+  return bombs;
+}
+
+function processMatches(matches, combo) {
+  // Check for bomb creation (4-in-a-row)
+  const bombLines = findBombLines();
+
+  // Show combo
+  if (combo >= 2) showCombo(combo);
+
+  // Expand bomb explosions
+  const explodedByBombs = [];
+  matches.forEach(({ r, c }) => {
+    if (grid[r][c] === BOMB) {
+      // Explode 8 surrounding
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          const nr = r + dr, nc = c + dc;
+          if (nr >= 0 && nr < GRID && nc >= 0 && nc < GRID) {
+            explodedByBombs.push({ r: nr, c: nc });
+          }
+        }
+      }
+    }
+  });
+
+  // Merge all cells to remove
+  const allToRemove = new Set(matches.map(m => `${m.r},${m.c}`));
+  explodedByBombs.forEach(({ r, c }) => allToRemove.add(`${r},${c}`));
+
+  const removeList = [...allToRemove].map(k => {
+    const [r, c] = k.split(',').map(Number);
+    return { r, c };
+  });
+
+  // Calculate score
+  const comboMult = combo === 1 ? 1 : combo === 2 ? 1.5 : 2;
+  const pts = Math.round(removeList.length * BASE_SCORE * comboMult);
+  score += pts;
+  if (score > bestScore) {
+    bestScore = score;
+    localStorage.setItem('match3_best', bestScore);
+  }
+  updateUI();
+
+  // Floating score particle
+  if (removeList.length > 0) {
+    const mid = removeList[Math.floor(removeList.length / 2)];
+    spawnParticle(`+${pts}`, mid.c * cellSize + cellSize / 2, mid.r * cellSize + cellSize / 2);
+  }
+
+  // Shrink animation
+  shrinkAnim = removeList.map(({ r, c }) => ({ r, c, progress: 0 }));
+
+  animateShrink(() => {
+    // Place bombs where 4-in-a-row was
+    bombLines.forEach(bl => {
+      if (bl.dir === 'h') {
+        const midC = Math.floor((bl.cStart + bl.cEnd) / 2);
+        if (allToRemove.has(`${bl.r},${midC}`)) {
+          grid[bl.r][midC] = BOMB; // will survive removal — handled after
+        }
+      } else {
+        const midR = Math.floor((bl.rStart + bl.rEnd) / 2);
+        if (allToRemove.has(`${midR},${bl.c}`)) {
+          // Mark to place bomb after refill
+          // We'll handle this by removing from allToRemove
+          allToRemove.delete(`${midR},${bl.c}`);
+          grid[midR][bl.c] = BOMB;
+        }
+      }
+    });
+
+    // Remove matched cells
+    removeList.forEach(({ r, c }) => {
+      if (grid[r][c] !== BOMB || !bombLines.some(bl =>
+        bl.dir === 'v' && bl.c === c && midBomb(bl) === r)) {
+        grid[r][c] = null;
+      }
+    });
+
+    shrinkAnim = [];
+    applyGravity(() => {
+      const newMatches = findMatches();
+      if (newMatches.length > 0 && steps > 0) {
+        setTimeout(() => processMatches(newMatches, combo + 1), 200);
+      } else {
+        animating = false;
+        drawBoard();
+        if (steps <= 0) showGameOver();
+        else if (!hasValidMoves()) shuffleGrid();
+      }
+    });
+  });
+}
+
+function midBomb(bl) {
+  return bl.dir === 'v' ? Math.floor((bl.rStart + bl.rEnd) / 2) : -1;
+}
+
+function applyGravity(cb) {
+  dropAnim = [];
+  for (let c = 0; c < GRID; c++) {
+    let emptyRows = [];
+    for (let r = GRID - 1; r >= 0; r--) {
+      if (grid[r][c] === null) emptyRows.push(r);
+    }
+    if (emptyRows.length === 0) continue;
+
+    // Shift existing tiles down
+    for (let r = GRID - 1; r >= 0; r--) {
+      if (grid[r][c] === null) {
+        // Find nearest non-null above
+        let src = r - 1;
+        while (src >= 0 && grid[src][c] === null) src--;
+        if (src >= 0) {
+          grid[r][c] = grid[src][c];
+          grid[src][c] = null;
+          dropAnim.push({ c, toRow: r, fromY: src * cellSize, progress: 0 });
+        }
+      }
+    }
+    // Fill top nulls with new symbols
+    for (let r = 0; r < GRID; r++) {
+      if (grid[r][c] === null) {
+        grid[r][c] = randomSymbol();
+        const fromAbove = (r - GRID) * cellSize;
+        dropAnim.push({ c, toRow: r, fromY: fromAbove, progress: 0 });
+      }
+    }
+  }
+
+  if (dropAnim.length === 0) { cb(); return; }
+
+  const duration = 350;
+  const start = performance.now();
+  function tick(now) {
+    const t = Math.min((now - start) / duration, 1);
+    dropAnim.forEach(a => a.progress = t);
+    drawBoard();
+    if (t < 1) requestAnimationFrame(tick);
+    else { dropAnim = []; cb(); }
+  }
+  requestAnimationFrame(tick);
+}
+
+function animateShrink(cb) {
+  const duration = 200;
+  const start = performance.now();
+  function tick(now) {
+    const t = Math.min((now - start) / duration, 1);
+    shrinkAnim.forEach(a => a.progress = t);
+    floatParticles.forEach(p => {
+      p.y -= 1.5;
+      p.alpha -= 0.025;
+    });
+    floatParticles = floatParticles.filter(p => p.alpha > 0);
+    drawBoard();
+    if (t < 1) requestAnimationFrame(tick);
+    else cb();
+  }
+  requestAnimationFrame(tick);
+}
+
+function hasValidMoves() {
+  for (let r = 0; r < GRID; r++) {
+    for (let c = 0; c < GRID; c++) {
+      // Try swap right
+      if (c + 1 < GRID) {
+        swap({ r, c }, { r, c: c + 1 });
+        const m = findMatches();
+        swap({ r, c }, { r, c: c + 1 });
+        if (m.length > 0) return true;
+      }
+      // Try swap down
+      if (r + 1 < GRID) {
+        swap({ r, c }, { r: r + 1, c });
+        const m = findMatches();
+        swap({ r, c }, { r: r + 1, c });
+        if (m.length > 0) return true;
+      }
+    }
+  }
+  return false;
+}
+
+function shuffleGrid() {
+  // Shuffle until valid moves exist
+  let attempts = 0;
+  do {
+    for (let r = 0; r < GRID; r++)
+      for (let c = 0; c < GRID; c++)
+        grid[r][c] = randomSymbol();
+    attempts++;
+  } while ((findMatches().length > 0 || !hasValidMoves()) && attempts < 100);
+  drawBoard();
+  spawnParticle('🔀 重新洗牌！', canvas.width / 2, canvas.height / 2 - 20);
+}
+
+function showCombo(combo) {
+  const el = document.getElementById('comboDisplay');
+  el.textContent = combo === 2 ? '🔥 COMBO x2!' : combo === 3 ? '💥 COMBO x3!' : `⚡ COMBO x${combo}!`;
+  el.style.opacity = '1';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.opacity = '0'; }, 900);
+}
+
+function spawnParticle(text, x, y) {
+  floatParticles.push({ text, x, y, alpha: 1, size: 20, color: '#ffcc44' });
+}
+
+function showGameOver() {
+  document.getElementById('goScore').textContent = `得分：${score}`;
+  document.getElementById('goBest').textContent = score >= bestScore
+    ? '🏆 新纪录！' : `最高分：${bestScore}`;
+  document.getElementById('gameOver').classList.add('visible');
+}
+
+window.addEventListener('load', init);
+window.addEventListener('resize', () => {
+  const maxW = Math.min(window.innerWidth - 20, 400);
+  canvas.width = maxW;
+  canvas.height = maxW;
+  cellSize = maxW / GRID;
+  drawBoard();
+});
+</script>
+</body>
+</html>
