@@ -77,6 +77,12 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;mi
 /* EMPTY */
 .empty{text-align:center;padding:40px;color:var(--text3)}
 </style>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sports Live">
+  <link rel="apple-touch-icon" href="icon-192.png">
 </head>
 <body>
 
@@ -292,6 +298,12 @@ async function loadGames(){
 
 updateStats();
 loadGames();
+</script>
+
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
 </script>
 </body>
 </html>
