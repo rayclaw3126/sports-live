@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>🎰 足球老虎机</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--bg:#0a0a1a;--card:#12122a;--border:#2a2a5a;--purple:#7c3aed;--gold:#f59e0b;--text:#e2e8f0;--text2:#94a3b8;--green:#22c55e;--red:#ef4444}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;background-image:radial-gradient(ellipse at top,#1a0a3a 0%,#0a0a1a 60%)}
+.header{width:100%;background:linear-gradient(135deg,#1a0a3a,#0d0d2a);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;justify-content:space-between}
+.logo h1{font-size:1.1rem;font-weight:800;background:linear-gradient(90deg,#f59e0b,#ef4444,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo p{font-size:0.6rem;color:var(--text2)}
+.back-btn{font-size:0.75rem;color:#f59e0b;text-decoration:none;background:rgba(245,158,11,0.1);padding:5px 12px;border-radius:20px;border:1px solid rgba(245,158,11,0.3)}
+.wrap{width:100%;max-width:420px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:14px}
+
+/* STATS */
+.stats-row{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center}
+.stat-num{font-size:2rem;font-weight:900;color:var(--gold)}
+.stat-label{font-size:0.62rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+
+/* MACHINE */
+.machine{width:100%;background:linear-gradient(135deg,#1a0a3a,#2d1060);border:3px solid var(--gold);border-radius:20px;padding:20px;box-shadow:0 0 40px rgba(168,85,247,0.3),inset 0 0 20px rgba(0,0,0,0.5);position:relative;overflow:hidden}
+.machine::before{content:'🎰 FOOTBALL SLOTS 🎰';position:absolute;top:10px;left:50%;transform:translateX(-50%);font-size:0.7rem;font-weight:800;color:var(--gold);white-space:nowrap;letter-spacing:2px;text-shadow:0 0 10px var(--gold)}
+.machine::after{content:'';position:absolute;inset:0;background:linear-gradient(transparent 40%,rgba(0,0,0,0.2));pointer-events:none}
+
+/* REELS */
+.reels{display:flex;gap:10px;justify-content:center;margin:30px 0 20px;position:relative;z-index:1}
+.reel-wrap{flex:1;background:#000;border:2px solid rgba(245,158,11,0.4);border-radius:12px;overflow:hidden;position:relative;height:100px}
+.reel-wrap::before,.reel-wrap::after{content:'';position:absolute;left:0;right:0;height:25px;z-index:2;pointer-events:none}
+.reel-wrap::before{top:0;background:linear-gradient(#000,transparent)}
+.reel-wrap::after{bottom:0;background:linear-gradient(transparent,#000)}
+.reel{display:flex;flex-direction:column;align-items:center;transition:transform 0.1s linear;will-change:transform}
+.reel-item{height:100px;display:flex;align-items:center;justify-content:center;font-size:3.5rem;line-height:1;flex-shrink:0}
+/* Win line */
+.win-line{position:absolute;top:50%;left:-4px;right:-4px;height:3px;background:rgba(245,158,11,0);transform:translateY(-50%);z-index:3;border-radius:2px;transition:background 0.3s}
+.win-line.active{background:var(--gold);box-shadow:0 0 10px var(--gold)}
+
+/* RESULT DISPLAY */
+.result-display{background:rgba(0,0,0,0.5);border:1px solid var(--border);border-radius:10px;padding:10px 20px;text-align:center;min-height:44px;display:flex;align-items:center;justify-content:center;position:relative;z-index:1}
+.result-msg{font-size:1rem;font-weight:800;transition:all 0.3s}
+
+/* SPIN BTN */
+.spin-btn{width:100%;padding:16px;border:none;border-radius:14px;font-size:1.1rem;font-weight:900;cursor:pointer;transition:all 0.15s;letter-spacing:1px;position:relative;z-index:1;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;box-shadow:0 4px 20px rgba(245,158,11,0.4),0 0 0 2px rgba(245,158,11,0.2)}
+.spin-btn:active{transform:scale(0.97)}
+.spin-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.spin-btn.spinning{background:linear-gradient(135deg,#6d28d9,#4c1d95);box-shadow:0 4px 20px rgba(109,40,217,0.4)}
+
+/* BET CONTROLS */
+.bet-row{width:100%;display:flex;align-items:center;gap:10px}
+.bet-label{font-size:0.75rem;color:var(--text2);white-space:nowrap}
+.bet-btn{background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.8rem;font-weight:700;padding:8px 14px;cursor:pointer;transition:all 0.15s}
+.bet-btn:active{background:rgba(245,158,11,0.2);border-color:var(--gold)}
+.bet-val{flex:1;text-align:center;font-size:1.3rem;font-weight:900;color:var(--gold)}
+
+/* PAYTABLE */
+.paytable{width:100%;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px}
+.pay-title{font-size:0.7rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;text-align:center}
+.pay-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:0.8rem}
+.pay-row:last-child{border:none}
+.pay-combo{letter-spacing:4px;font-size:1rem}
+.pay-prize{font-weight:800;color:var(--gold)}
+
+/* WIN ANIMATION */
+.confetti{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:999;display:none}
+.coin{position:absolute;font-size:1.5rem;animation:fall 1.5s ease-in forwards}
+@keyframes fall{from{transform:translateY(-50px) rotate(0deg);opacity:1}to{transform:translateY(100vh) rotate(720deg);opacity:0}}
+
+/* FREE SPINS */
+.free-spin-badge{background:linear-gradient(135deg,#7c3aed,#4c1d95);border:1px solid #a855f7;border-radius:20px;padding:4px 12px;font-size:0.7rem;font-weight:700;color:#e9d5ff;display:none}
+.free-spin-badge.show{display:inline-block}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <h1>🎰 足球老虎机</h1>
+    <p>Football Slots · ហ្គេមស្លត</p>
+  </div>
+  <a href="index.html" class="back-btn">← 返回</a>
+</div>
+
+<div class="wrap">
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-box">
+      <div class="stat-num" id="coins">1000</div>
+      <div class="stat-label">💰 积分</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num" id="bigWins" style="color:#a855f7">0</div>
+      <div class="stat-label">🏆 大奖</div>
+    </div>
+  </div>
+
+  <!-- Slot Machine -->
+  <div class="machine">
+    <div class="reels">
+      <div class="reel-wrap">
+        <div class="reel" id="reel0"></div>
+        <div class="win-line" id="winLine0"></div>
+      </div>
+      <div class="reel-wrap">
+        <div class="reel" id="reel1"></div>
+        <div class="win-line" id="winLine1"></div>
+      </div>
+      <div class="reel-wrap">
+        <div class="reel" id="reel2"></div>
+        <div class="win-line" id="winLine2"></div>
+      </div>
+    </div>
+
+    <div class="result-display">
+      <div class="result-msg" id="resultMsg">🎰 准备好了吗？转动命运！</div>
+    </div>
+  </div>
+
+  <!-- Bet controls -->
+  <div class="bet-row">
+    <span class="bet-label">下注：</span>
+    <button class="bet-btn" onclick="changeBet(-10)">－</button>
+    <div class="bet-val" id="betVal">10</div>
+    <button class="bet-btn" onclick="changeBet(10)">＋</button>
+    <button class="bet-btn" onclick="maxBet()" style="color:var(--gold);border-color:var(--gold)">MAX</button>
+    <span class="free-spin-badge" id="freeSpinBadge">🎁 FREE x<span id="freeSpinCount">0</span></span>
+  </div>
+
+  <!-- Spin button -->
+  <button class="spin-btn" id="spinBtn" onclick="spin()">🎰 SPIN 转！</button>
+
+  <!-- Paytable -->
+  <div class="paytable">
+    <div class="pay-title">💎 赔率表 Paytable</div>
+    <div class="pay-row"><span class="pay-combo">🏆🏆🏆</span><span class="pay-prize">× 50 大奖！</span></div>
+    <div class="pay-row"><span class="pay-combo">⚽⚽⚽</span><span class="pay-prize">× 20</span></div>
+    <div class="pay-row"><span class="pay-combo">⭐⭐⭐</span><span class="pay-prize">× 15</span></div>
+    <div class="pay-row"><span class="pay-combo">🥅🥅🥅</span><span class="pay-prize">× 10</span></div>
+    <div class="pay-row"><span class="pay-combo">🥾🥾🥾</span><span class="pay-prize">× 8</span></div>
+    <div class="pay-row"><span class="pay-combo">🃏🃏🃏</span><span class="pay-prize">🎁 3次免费转</span></div>
+    <div class="pay-row"><span style="font-size:0.75rem;color:var(--text2)">任意两个相同</span><span class="pay-prize">× 2</span></div>
+  </div>
+</div>
+
+<div class="confetti" id="confetti"></div>
+
+<script>
+const SYMBOLS = ['⚽','⭐','🏆','🥅','🥾','🃏','🎯','💫'];
+const WEIGHTS  = [30,  20,  5,   15,  15,  5,   8,   2]; // 出现概率权重
+const PAYOUTS = {
+  '🏆🏆🏆':50,'⚽⚽⚽':20,'⭐⭐⭐':15,
+  '🥅🥅🥅':10,'🥾🥾🥾':8,'🃏🃏🃏':-1,// -1 = free spins
+  '🎯🎯🎯':12,'💫💫💫':30,
+};
+
+let coins = parseInt(localStorage.getItem('slots_coins')||'1000');
+let bet = 10;
+let bigWins = parseInt(localStorage.getItem('slots_bigwins')||'0');
+let freeSpins = 0;
+let spinning = false;
+let reelSymbols = [[],[],[]];
+let currentSymbols = ['⚽','⚽','⚽'];
+
+function weightedRandom(){
+  const total=WEIGHTS.reduce((a,b)=>a+b,0);
+  let r=Math.random()*total;
+  for(let i=0;i<SYMBOLS.length;i++){r-=WEIGHTS[i];if(r<=0)return i;}
+  return 0;
+}
+
+function buildReel(reelIdx){
+  const reel=document.getElementById('reel'+reelIdx);
+  reel.innerHTML='';
+  const items=[];
+  // Build 20 items
+  for(let i=0;i<20;i++){
+    const sym=SYMBOLS[weightedRandom()];
+    items.push(sym);
+    const div=document.createElement('div');
+    div.className='reel-item';
+    div.textContent=sym;
+    reel.appendChild(div);
+  }
+  reelSymbols[reelIdx]=items;
+  // Position at middle
+  reel.style.transform=`translateY(-${9*100}px)`;
+}
+
+function initReels(){
+  for(let i=0;i<3;i++) buildReel(i);
+  updateDisplay();
+}
+
+function changeBet(delta){
+  if(spinning)return;
+  bet=Math.max(10,Math.min(coins,bet+delta));
+  bet=Math.round(bet/10)*10;
+  document.getElementById('betVal').textContent=bet;
+}
+
+function maxBet(){
+  if(spinning)return;
+  bet=Math.min(coins,100);
+  document.getElementById('betVal').textContent=bet;
+}
+
+function updateDisplay(){
+  document.getElementById('coins').textContent=coins;
+  document.getElementById('bigWins').textContent=bigWins;
+  localStorage.setItem('slots_coins',coins);
+  localStorage.setItem('slots_bigwins',bigWins);
+}
+
+function spin(){
+  if(spinning)return;
+  const isFree=freeSpins>0;
+  if(!isFree){
+    if(coins<bet){alert('积分不足！积分不够了 💸');return;}
+    coins-=bet;
+    updateDisplay();
+  } else {
+    freeSpins--;
+    document.getElementById('freeSpinCount').textContent=freeSpins;
+    if(freeSpins<=0) document.getElementById('freeSpinBadge').classList.remove('show');
+  }
+
+  spinning=true;
+  document.getElementById('spinBtn').disabled=true;
+  document.getElementById('spinBtn').classList.add('spinning');
+  document.getElementById('spinBtn').textContent='🌀 转动中...';
+  document.getElementById('resultMsg').textContent='🎰 旋转中...';
+  [0,1,2].forEach(i=>document.getElementById('winLine'+i).classList.remove('active'));
+
+  // Determine results
+  const results=[
+    SYMBOLS[weightedRandom()],
+    SYMBOLS[weightedRandom()],
+    SYMBOLS[weightedRandom()],
+  ];
+
+  // Animate each reel
+  const delays=[0,200,400];
+  const durations=[1000,1300,1600];
+
+  delays.forEach((delay,i)=>{
+    const reel=document.getElementById('reel'+i);
+    const totalItems=reelSymbols[i].length;
+    // Spin fast
+    let frame=0;
+    const interval=setInterval(()=>{
+      frame++;
+      const pos=(frame*3)%totalItems;
+      reel.style.transition='none';
+      reel.style.transform=`translateY(-${pos*100}px)`;
+    },50);
+
+    setTimeout(()=>{
+      clearInterval(interval);
+      // Find result position or add to end
+      const targetIdx=reelSymbols[i].length-2;
+      reelSymbols[i][targetIdx]=results[i];
+      const targetDiv=reel.children[targetIdx];
+      if(targetDiv) targetDiv.textContent=results[i];
+      reel.style.transition=`transform 0.4s cubic-bezier(0.25,0.46,0.45,0.94)`;
+      reel.style.transform=`translateY(-${(targetIdx-0)*100}px)`;
+      currentSymbols[i]=results[i];
+
+      if(i===2){
+        setTimeout(()=>showResult(results,isFree),500);
+      }
+    },delay+durations[i]);
+  });
+}
+
+function showResult(results,wasFree){
+  const combo=results.join('');
+  let won=0, msg='', color='var(--text)';
+  const payout=PAYOUTS[combo];
+
+  if(payout===50){
+    won=bet*50; msg=`🏆🏆🏆 大奖！JACKPOT！+${won}分`; color='var(--gold)';
+    bigWins++; showConfetti(true);
+  } else if(payout&&payout>0){
+    won=bet*payout; msg=`${combo} 中奖！+${won}分`; color=payout>=20?'#a855f7':'var(--green)';
+    if(payout>=20)showConfetti(false);
+  } else if(payout===-1){
+    won=0; freeSpins+=3;
+    document.getElementById('freeSpinCount').textContent=freeSpins;
+    document.getElementById('freeSpinBadge').classList.add('show');
+    msg='🃏🃏🃏 免费旋转 x3！FREE SPINS!'; color='#a855f7';
+    showConfetti(false);
+  } else {
+    // Check pairs
+    if(results[0]===results[1]||results[1]===results[2]||results[0]===results[2]){
+      won=bet*2; msg=`两个相同！+${won}分`; color='var(--green)';
+    } else {
+      won=0; msg=wasFree?'🎁 免费转：未中奖':'😢 未中奖 Try again!'; color='var(--text2)';
+    }
+  }
+
+  coins+=won;
+  if(payout===50) bigWins++;
+  updateDisplay();
+
+  document.getElementById('resultMsg').textContent=msg;
+  document.getElementById('resultMsg').style.color=color;
+  if(won>0||payout===-1){
+    [0,1,2].forEach(i=>document.getElementById('winLine'+i).classList.add('active'));
+  }
+
+  spinning=false;
+  document.getElementById('spinBtn').disabled=false;
+  document.getElementById('spinBtn').classList.remove('spinning');
+  document.getElementById('spinBtn').textContent=freeSpins>0?`🎁 FREE SPIN (${freeSpins})！`:'🎰 SPIN 转！';
+
+  // Low coins warning
+  if(coins<10){
+    setTimeout(()=>{
+      coins=500;
+      updateDisplay();
+      document.getElementById('resultMsg').textContent='💝 赠送500积分！继续玩！';
+    },1500);
+  }
+}
+
+function showConfetti(big){
+  const c=document.getElementById('confetti');
+  c.style.display='block';
+  c.innerHTML='';
+  const items=big?['🏆','💰','⭐','🎉','✨']:['⚽','🌟','💫','🎊'];
+  for(let i=0;i<(big?30:15);i++){
+    const span=document.createElement('span');
+    span.className='coin';
+    span.textContent=items[Math.floor(Math.random()*items.length)];
+    span.style.left=Math.random()*100+'%';
+    span.style.animationDelay=Math.random()*0.5+'s';
+    span.style.animationDuration=(1+Math.random())+'s';
+    c.appendChild(span);
+  }
+  setTimeout(()=>{c.style.display='none';c.innerHTML='';},2000);
+}
+
+// Init
+initReels();
+updateDisplay();
+</script>
+</body>
+</html>
