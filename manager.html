@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>建队夺冠 - 足球经理</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#060d1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #060d1a;
+    color: #e0e8f0;
+    min-height: 100vh;
+  }
+  /* TOP NAV */
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 20px;
+    background: #0a1628;
+    border-bottom: 1px solid #1a2d4a;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .back-btn {
+    display: flex; align-items: center; gap: 6px;
+    color: #4fc3f7; text-decoration: none; font-size: 14px;
+    padding: 6px 12px; border: 1px solid #1a4a6a;
+    border-radius: 20px; transition: all .2s;
+  }
+  .back-btn:hover { background: #1a3a5a; color: #81d4fa; }
+  .topbar h1 { font-size: 20px; color: #fff; font-weight: 700; letter-spacing: 1px; }
+  .budget-display {
+    margin-left: auto;
+    background: linear-gradient(135deg, #0d3320, #0a4a2a);
+    border: 1px solid #2ecc71;
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-weight: 700;
+    color: #2ecc71;
+    font-size: 15px;
+  }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    background: #0a1628;
+    border-bottom: 1px solid #1a2d4a;
+  }
+  .tab-btn {
+    flex: 1; padding: 12px; background: none; border: none;
+    color: #7a9bb5; cursor: pointer; font-size: 14px; font-weight: 600;
+    border-bottom: 3px solid transparent; transition: all .2s;
+  }
+  .tab-btn.active { color: #4fc3f7; border-bottom-color: #4fc3f7; background: #060d1a; }
+  .tab-btn:hover:not(.active) { color: #a0c4d8; background: #0d1e34; }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* SECTION */
+  .section { padding: 20px; max-width: 1100px; margin: 0 auto; }
+  .section-title {
+    font-size: 13px; text-transform: uppercase; letter-spacing: 2px;
+    color: #4fc3f7; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: #1a3050; }
+
+  /* PLAYER CARDS */
+  .player-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .player-card {
+    background: linear-gradient(160deg, #0f1f35, #0a1828);
+    border: 1px solid #1a3050;
+    border-radius: 12px;
+    padding: 14px;
+    cursor: pointer;
+    transition: all .25s;
+    position: relative;
+    overflow: hidden;
+  }
+  .player-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--pos-color, #4fc3f7);
+  }
+  .player-card:hover { transform: translateY(-3px); border-color: var(--pos-color, #4fc3f7); box-shadow: 0 6px 20px rgba(0,0,0,.5); }
+  .player-card.owned { border-color: #2ecc71; background: linear-gradient(160deg, #0f2820, #0a1e18); }
+  .player-card.owned::before { background: #2ecc71; }
+  .player-card.cant-afford { opacity: .5; cursor: not-allowed; }
+  .card-pos {
+    display: inline-block; font-size: 10px; font-weight: 700;
+    padding: 2px 8px; border-radius: 4px; margin-bottom: 8px;
+    background: var(--pos-color, #4fc3f7); color: #000;
+  }
+  .card-name { font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+  .card-rating {
+    font-size: 28px; font-weight: 900; color: var(--pos-color, #4fc3f7);
+    line-height: 1; margin-bottom: 6px;
+  }
+  .card-price { font-size: 13px; color: #7ab; }
+  .card-price span { color: #2ecc71; font-weight: 600; }
+  .card-action {
+    margin-top: 10px; width: 100%; padding: 7px;
+    border: 1px solid var(--pos-color, #4fc3f7); border-radius: 6px;
+    background: transparent; color: var(--pos-color, #4fc3f7);
+    font-size: 12px; font-weight: 700; cursor: pointer; transition: all .2s;
+  }
+  .card-action:hover { background: var(--pos-color, #4fc3f7); color: #000; }
+  .card-action.sell { border-color: #e74c3c; color: #e74c3c; }
+  .card-action.sell:hover { background: #e74c3c; color: #fff; }
+
+  /* POSITION COLORS */
+  .pos-GK { --pos-color: #f39c12; }
+  .pos-DEF { --pos-color: #3498db; }
+  .pos-MID { --pos-color: #9b59b6; }
+  .pos-FW { --pos-color: #e74c3c; }
+
+  /* SQUAD / PITCH */
+  .pitch-wrapper {
+    background: linear-gradient(180deg, #1a4a25 0%, #1d5c2a 40%, #1a5425 70%, #1a4a25 100%);
+    border-radius: 16px;
+    border: 3px solid #2a5a35;
+    padding: 20px 10px;
+    min-height: 480px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 0 40px rgba(0,0,0,.4);
+  }
+  /* Pitch lines */
+  .pitch-wrapper::before {
+    content: '';
+    position: absolute; top: 50%; left: 10%; right: 10%;
+    height: 1px; background: rgba(255,255,255,.15);
+  }
+  .pitch-center {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    width: 100px; height: 100px;
+    border: 1px solid rgba(255,255,255,.15);
+    border-radius: 50%;
+  }
+  .pitch-rows {
+    display: flex; flex-direction: column;
+    gap: 16px; position: relative; z-index: 2;
+  }
+  .pitch-row {
+    display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;
+  }
+  .pitch-row-label {
+    text-align: center; font-size: 10px; color: rgba(255,255,255,.4);
+    text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px;
+  }
+  .slot {
+    width: 75px; background: rgba(0,0,0,.4);
+    border: 2px dashed rgba(255,255,255,.2);
+    border-radius: 10px; padding: 8px 4px; text-align: center;
+    transition: all .2s; cursor: default;
+  }
+  .slot.filled {
+    border: 2px solid var(--pos-color, #4fc3f7);
+    background: rgba(0,0,0,.6);
+  }
+  .slot-pos { font-size: 9px; color: rgba(255,255,255,.4); margin-bottom: 4px; }
+  .slot-name { font-size: 11px; color: #fff; font-weight: 600; line-height: 1.2; }
+  .slot-rating { font-size: 16px; font-weight: 900; color: var(--pos-color, #4fc3f7); }
+  .slot-remove {
+    display: block; margin-top: 4px; font-size: 10px; color: #e74c3c;
+    cursor: pointer; background: none; border: none;
+  }
+  .slot-empty { color: rgba(255,255,255,.25); font-size: 10px; }
+
+  /* SQUAD STATUS */
+  .squad-status {
+    background: #0a1628; border-radius: 10px; padding: 14px 18px;
+    display: flex; gap: 20px; flex-wrap: wrap; align-items: center;
+    margin-bottom: 16px; border: 1px solid #1a2d4a;
+  }
+  .squad-status .pos-count { font-size: 13px; }
+  .squad-status .pos-count span { font-weight: 700; }
+  .squad-status .needed { color: #e74c3c; }
+  .squad-status .ok { color: #2ecc71; }
+
+  .start-btn {
+    display: block; width: 100%; max-width: 380px; margin: 18px auto 0;
+    padding: 16px; background: linear-gradient(135deg, #27ae60, #16a085);
+    border: none; border-radius: 12px; color: #fff;
+    font-size: 18px; font-weight: 800; letter-spacing: 1px;
+    cursor: pointer; transition: all .2s;
+    box-shadow: 0 4px 20px rgba(39,174,96,.4);
+  }
+  .start-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 28px rgba(39,174,96,.5); }
+  .start-btn:disabled { background: #1a3030; color: #4a6a6a; cursor: not-allowed; box-shadow: none; }
+
+  /* MATCH / LEAGUE TAB */
+  .match-area { padding: 20px; max-width: 700px; margin: 0 auto; }
+
+  .league-table {
+    width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 12px;
+  }
+  .league-table th { background: #0a1628; color: #4fc3f7; padding: 10px; text-align: left; font-size: 12px; text-transform: uppercase; }
+  .league-table td { padding: 10px 10px; border-bottom: 1px solid #0f1e30; }
+  .league-table tr.my-team td { background: rgba(46,204,113,.08); color: #fff; font-weight: 600; }
+  .league-table tr:hover td { background: rgba(79,195,247,.05); }
+  .rank-medal { font-size: 16px; }
+
+  .match-card {
+    background: #0a1628; border: 1px solid #1a2d4a; border-radius: 12px;
+    padding: 18px; margin-bottom: 16px;
+  }
+  .match-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .match-round { font-size: 12px; color: #4fc3f7; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+  .match-score { font-size: 28px; font-weight: 900; color: #fff; letter-spacing: 4px; text-align: center; }
+  .match-teams { display: flex; justify-content: space-between; font-size: 15px; color: #a0c4d8; margin-bottom: 14px; }
+  .match-teams .mine { color: #2ecc71; font-weight: 700; }
+
+  .progress-bar-wrap { background: #0d1e34; border-radius: 20px; height: 10px; margin: 10px 0; overflow: hidden; }
+  .progress-bar { height: 100%; background: linear-gradient(90deg, #27ae60, #2ecc71); width: 0%; transition: width .1s linear; border-radius: 20px; }
+
+  .commentary {
+    background: #060d1a; border-radius: 8px; padding: 12px;
+    font-size: 13px; line-height: 1.9; max-height: 200px; overflow-y: auto;
+    border: 1px solid #1a2d4a;
+  }
+  .commentary p { margin-bottom: 2px; }
+  .commentary .goal { color: #f1c40f; font-weight: 700; }
+  .commentary .chance { color: #e67e22; }
+  .commentary .save { color: #3498db; }
+  .commentary .normal { color: #7a9bb5; }
+  .commentary .minute { color: #4a6a8a; margin-right: 6px; }
+
+  .result-banner {
+    text-align: center; padding: 20px; border-radius: 12px; margin-bottom: 16px;
+    font-size: 22px; font-weight: 800;
+  }
+  .result-win { background: linear-gradient(135deg, #0d3320, #0a4a2a); border: 2px solid #2ecc71; color: #2ecc71; }
+  .result-draw { background: linear-gradient(135deg, #1a2a0a, #2a3510); border: 2px solid #f39c12; color: #f39c12; }
+  .result-loss { background: linear-gradient(135deg, #2a0a0a, #3a1010); border: 2px solid #e74c3c; color: #e74c3c; }
+
+  .next-btn {
+    display: block; width: 100%; padding: 14px;
+    background: linear-gradient(135deg, #1a4a8a, #0d3a6a);
+    border: 1px solid #2a5aaa; border-radius: 10px;
+    color: #fff; font-size: 16px; font-weight: 700; cursor: pointer;
+    transition: all .2s; margin-top: 12px;
+  }
+  .next-btn:hover { background: linear-gradient(135deg, #2a5aaa, #1a4a8a); transform: translateY(-1px); }
+
+  .final-screen {
+    text-align: center; padding: 30px 20px;
+  }
+  .trophy { font-size: 80px; margin-bottom: 10px; }
+  .final-rank { font-size: 36px; font-weight: 900; margin-bottom: 6px; }
+  .final-pts { font-size: 18px; color: #7a9bb5; }
+  .final-msg { font-size: 20px; margin: 16px 0; color: #4fc3f7; }
+  .play-again-btn {
+    display: inline-block; margin-top: 20px; padding: 14px 40px;
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    border: none; border-radius: 10px; color: #fff;
+    font-size: 16px; font-weight: 700; cursor: pointer; transition: all .2s;
+  }
+  .play-again-btn:hover { transform: translateY(-2px); }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: #1a3a5a; border: 1px solid #4fc3f7; border-radius: 8px;
+    padding: 12px 24px; font-size: 14px; font-weight: 600;
+    color: #fff; z-index: 9999; transition: transform .3s ease;
+    pointer-events: none;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.error { background: #3a1a1a; border-color: #e74c3c; }
+  .toast.success { background: #1a3a1a; border-color: #2ecc71; }
+
+  @media (max-width: 600px) {
+    .player-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+    .slot { width: 64px; }
+    .slot-name { font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <a href="hub.html" class="back-btn">← 返回</a>
+  <h1>⚽ 建队夺冠</h1>
+  <div class="budget-display" id="budgetDisplay">💰 $1000</div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('market')">🛒 球员市场</button>
+  <button class="tab-btn" onclick="switchTab('squad')">🏟️ 阵容</button>
+  <button class="tab-btn" id="leagueTabBtn" onclick="switchTab('league')">🏆 联赛</button>
+</div>
+
+<!-- MARKET TAB -->
+<div class="tab-panel active" id="tab-market">
+  <div class="section">
+    <div id="marketGK"></div>
+    <div id="marketDEF"></div>
+    <div id="marketMID"></div>
+    <div id="marketFW"></div>
+  </div>
+</div>
+
+<!-- SQUAD TAB -->
+<div class="tab-panel" id="tab-squad">
+  <div class="section">
+    <div class="squad-status" id="squadStatus"></div>
+    <div class="pitch-wrapper">
+      <div class="pitch-center"></div>
+      <div class="pitch-rows" id="pitchRows"></div>
+    </div>
+    <button class="start-btn" id="startBtn" onclick="startLeague()" disabled>
+      ▶ 开始联赛 (需要完整阵容)
+    </button>
+  </div>
+</div>
+
+<!-- LEAGUE TAB -->
+<div class="tab-panel" id="tab-league">
+  <div class="match-area" id="leagueArea">
+    <p style="color:#4a6a8a; text-align:center; padding:40px 0;">先组好阵容，再来这里开始联赛！</p>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ===================== DATA =====================
+const ALL_PLAYERS = [
+  // GK
+  { id:1, name:'Alisson',    pos:'GK',  rating:90, price:180 },
+  { id:2, name:'De Gea',     pos:'GK',  rating:83, price:100 },
+  { id:3, name:'Courtois',   pos:'GK',  rating:89, price:160 },
+  // DEF
+  { id:4, name:'Van Dijk',   pos:'DEF', rating:91, price:220 },
+  { id:5, name:'Ramos',      pos:'DEF', rating:86, price:160 },
+  { id:6, name:'Alaba',      pos:'DEF', rating:84, price:130 },
+  { id:7, name:'Rudiger',    pos:'DEF', rating:80, price:80  },
+  { id:8, name:'Chilwell',   pos:'DEF', rating:76, price:60  },
+  { id:9, name:'Kimpembe',   pos:'DEF', rating:78, price:70  },
+  // MID
+  { id:10, name:'Modric',    pos:'MID', rating:88, price:190 },
+  { id:11, name:'De Bruyne', pos:'MID', rating:92, price:270 },
+  { id:12, name:'Kroos',     pos:'MID', rating:85, price:150 },
+  { id:13, name:'Busquets',  pos:'MID', rating:80, price:90  },
+  { id:14, name:'Kante',     pos:'MID', rating:85, price:140 },
+  { id:15, name:'Xhaka',     pos:'MID', rating:76, price:65  },
+  // FW
+  { id:16, name:'Messi',     pos:'FW',  rating:97, price:300 },
+  { id:17, name:'Ronaldo',   pos:'FW',  rating:95, price:300 },
+  { id:18, name:'Salah',     pos:'FW',  rating:88, price:180 },
+  { id:19, name:'Lewandowski',pos:'FW', rating:93, price:260 },
+  { id:20, name:'Benzema',   pos:'FW',  rating:89, price:200 },
+];
+
+const NEEDS = { GK:1, DEF:4, MID:3, FW:3 };
+
+// ===================== STATE =====================
+let budget = 1000;
+let owned = []; // player ids
+let squad = { GK:[], DEF:[], MID:[], FW:[] }; // slots filled with player ids
+
+let leagueState = null;
+
+// ===================== INIT =====================
+function init() {
+  renderMarket();
+  renderSquad();
+}
+
+// ===================== MARKET =====================
+function renderMarket() {
+  ['GK','DEF','MID','FW'].forEach(pos => {
+    const players = ALL_PLAYERS.filter(p => p.pos === pos);
+    const posLabel = { GK:'守门员', DEF:'后卫', MID:'中场', FW:'前锋' };
+    const html = `
+      <div class="section-title">${posLabel[pos]}</div>
+      <div class="player-grid">
+        ${players.map(p => renderPlayerCard(p)).join('')}
+      </div>`;
+    document.getElementById('market' + pos).innerHTML = html;
+  });
+  document.getElementById('budgetDisplay').textContent = '💰 $' + budget;
+}
+
+function renderPlayerCard(p) {
+  const isOwned = owned.includes(p.id);
+  const cantAfford = !isOwned && budget < p.price;
+  const inSquad = isInSquad(p.id);
+  let cls = `player-card pos-${p.pos}`;
+  if (isOwned) cls += ' owned';
+  else if (cantAfford) cls += ' cant-afford';
+  const btnText = isOwned ? '出售 (-' + Math.floor(p.price * 0.6) + ')' : '购买 ($' + p.price + ')';
+  const btnCls = isOwned ? 'card-action sell' : 'card-action';
+  return `<div class="${cls}" id="pcard-${p.id}">
+    <div class="card-pos">${p.pos}</div>
+    <div class="card-name">${p.name}</div>
+    <div class="card-rating">${p.rating}</div>
+    <div class="card-price">价格: <span>$${p.price}</span></div>
+    <button class="${btnCls}" onclick="togglePlayer(${p.id})">${btnText}</button>
+  </div>`;
+}
+
+function togglePlayer(id) {
+  const p = ALL_PLAYERS.find(x => x.id === id);
+  if (owned.includes(id)) {
+    // sell - remove from squad first
+    removeFromSquad(id);
+    owned = owned.filter(x => x !== id);
+    budget += Math.floor(p.price * 0.6);
+    showToast(`卖出 ${p.name}，回收 $${Math.floor(p.price * 0.6)}`, 'success');
+  } else {
+    if (budget < p.price) { showToast('余额不足！', 'error'); return; }
+    budget -= p.price;
+    owned.push(id);
+    showToast(`购入 ${p.name} 🎉`, 'success');
+  }
+  renderMarket();
+  renderSquad();
+}
+
+// ===================== SQUAD =====================
+function isInSquad(id) {
+  return Object.values(squad).some(arr => arr.includes(id));
+}
+
+function removeFromSquad(id) {
+  Object.keys(squad).forEach(pos => {
+    squad[pos] = squad[pos].filter(x => x !== id);
+  });
+}
+
+function addToSquad(id) {
+  const p = ALL_PLAYERS.find(x => x.id === id);
+  if (!owned.includes(id)) { showToast('先购买该球员！', 'error'); return; }
+  if (isInSquad(id)) { showToast('已在阵容中！', 'error'); return; }
+  if (squad[p.pos].length >= NEEDS[p.pos]) {
+    showToast(`${p.pos} 位置已满！`, 'error'); return;
+  }
+  squad[p.pos].push(id);
+  renderSquad();
+  showToast(`${p.name} 加入阵容`, 'success');
+}
+
+function removeSlot(pos, id) {
+  squad[pos] = squad[pos].filter(x => x !== id);
+  renderSquad();
+}
+
+function getSquadCount() {
+  return Object.values(squad).reduce((s, a) => s + a.length, 0);
+}
+
+function squadComplete() {
+  return Object.keys(NEEDS).every(pos => squad[pos].length === NEEDS[pos]);
+}
+
+function renderSquad() {
+  // Status bar
+  const statusHtml = Object.keys(NEEDS).map(pos => {
+    const have = squad[pos].length, need = NEEDS[pos];
+    const ok = have >= need;
+    return `<div class="pos-count pos-${pos}">
+      <span style="color:var(--pos-color)">${pos}</span>
+      <span class="${ok?'ok':'needed'}">${have}/${need}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('squadStatus').innerHTML = statusHtml;
+
+  // Pitch
+  const rowConfig = [
+    { pos:'GK',  label:'门将', count:NEEDS.GK  },
+    { pos:'DEF', label:'后卫', count:NEEDS.DEF },
+    { pos:'MID', label:'中场', count:NEEDS.MID },
+    { pos:'FW',  label:'前锋', count:NEEDS.FW  },
+  ];
+  let pitchHtml = '';
+  rowConfig.forEach(row => {
+    const slots = [];
+    // filled slots
+    squad[row.pos].forEach(id => {
+      const p = ALL_PLAYERS.find(x => x.id === id);
+      slots.push(`<div class="slot filled pos-${row.pos}">
+        <div class="slot-pos">${row.pos}</div>
+        <div class="slot-name">${p.name}</div>
+        <div class="slot-rating">${p.rating}</div>
+        <button class="slot-remove" onclick="removeSlot('${row.pos}',${id})">✕ 移除</button>
+      </div>`);
+    });
+    // empty slots
+    for (let i = squad[row.pos].length; i < NEEDS[row.pos]; i++) {
+      slots.push(`<div class="slot"><div class="slot-empty">${row.pos}</div></div>`);
+    }
+    pitchHtml += `<div>
+      <div class="pitch-row-label">${row.label}</div>
+      <div class="pitch-row">${slots.join('')}</div>
+    </div>`;
+  });
+  document.getElementById('pitchRows').innerHTML = pitchHtml;
+
+  // Squad avg below pitch - show owned players not yet in squad
+  const bench = owned.filter(id => !isInSquad(id));
+  let benchHtml = '';
+  if (bench.length > 0) {
+    benchHtml = `<div class="section-title" style="margin-top:20px">替补席（点击上场）</div>
+    <div class="player-grid">${bench.map(id => {
+      const p = ALL_PLAYERS.find(x => x.id === id);
+      return `<div class="player-card pos-${p.pos}" onclick="addToSquad(${p.id})" style="cursor:pointer">
+        <div class="card-pos">${p.pos}</div>
+        <div class="card-name">${p.name}</div>
+        <div class="card-rating">${p.rating}</div>
+        <div style="font-size:12px;color:#4fc3f7;margin-top:8px">点击上场 ⬆</div>
+      </div>`;
+    }).join('')}</div>`;
+  }
+  // append after pitch in squad tab
+  let benchEl = document.getElementById('benchArea');
+  if (!benchEl) {
+    benchEl = document.createElement('div');
+    benchEl.id = 'benchArea';
+    document.querySelector('#tab-squad .section').appendChild(benchEl);
+  }
+  benchEl.innerHTML = benchHtml;
+
+  // Start btn
+  const startBtn = document.getElementById('startBtn');
+  if (squadComplete()) {
+    const avg = getSquadAvg();
+    startBtn.disabled = false;
+    startBtn.textContent = `▶ 开始联赛 (平均能力: ${avg})`;
+  } else {
+    startBtn.disabled = true;
+    const needed = Object.keys(NEEDS).filter(p => squad[p].length < NEEDS[p]);
+    startBtn.textContent = `▶ 开始联赛 (还需: ${needed.join(', ')})`;
+  }
+  document.getElementById('budgetDisplay').textContent = '💰 $' + budget;
+}
+
+function getSquadAvg() {
+  const ids = Object.values(squad).flat();
+  const ratings = ids.map(id => ALL_PLAYERS.find(p => p.id === id).rating);
+  return Math.round(ratings.reduce((a,b) => a+b, 0) / ratings.length);
+}
+
+// ===================== LEAGUE =====================
+const OPPONENTS = [
+  { name:'Manchester City',  rating:88 },
+  { name:'Real Madrid',      rating:86 },
+  { name:'Bayern Munich',    rating:87 },
+  { name:'PSG',              rating:84 },
+  { name:'Liverpool',        rating:85 },
+];
+
+function startLeague() {
+  if (!squadComplete()) { showToast('阵容未完整！', 'error'); return; }
+  leagueState = {
+    round: 0,
+    standings: [
+      { name:'我的球队', pts:0, w:0, d:0, l:0, gf:0, ga:0, mine:true },
+      ...OPPONENTS.map(o => ({ name:o.name, pts:0, w:0, d:0, l:0, gf:0, ga:0, mine:false, rating:o.rating })),
+    ],
+    myAvg: getSquadAvg(),
+    finished: false,
+  };
+  // Simulate AI vs AI games
+  switchTab('league');
+  renderLeague();
+}
+
+function renderLeague() {
+  const area = document.getElementById('leagueArea');
+  if (!leagueState) {
+    area.innerHTML = '<p style="color:#4a6a8a; text-align:center; padding:40px 0;">先组好阵容，再来这里开始联赛！</p>';
+    return;
+  }
+  if (leagueState.finished) {
+    renderFinal();
+    return;
+  }
+  const round = leagueState.round;
+  if (round >= 5) {
+    leagueState.finished = true;
+    renderFinal();
+    return;
+  }
+  const opp = OPPONENTS[round];
+  area.innerHTML = `
+    <div class="match-card">
+      <div class="match-header">
+        <span class="match-round">第 ${round+1} 轮 / 共 5 轮</span>
+      </div>
+      <div class="match-teams">
+        <span class="mine">我的球队 (${leagueState.myAvg})</span>
+        <span>VS</span>
+        <span>${opp.name} (${opp.rating})</span>
+      </div>
+      <div class="match-score" id="matchScore">- : -</div>
+      <div class="progress-bar-wrap"><div class="progress-bar" id="matchProgress"></div></div>
+      <div class="commentary" id="commentary"><p class="normal">⚽ 比赛即将开始...</p></div>
+    </div>
+    <div id="resultArea"></div>
+    <div id="standingsArea"></div>`;
+  simulateMatch(opp);
+}
+
+function simulateMatch(opp) {
+  const myRating = leagueState.myAvg;
+  const oppRating = opp.rating;
+  const advantage = (myRating - oppRating) / 10;
+  // Determine result
+  const rand = Math.random() * 2 - 1 + advantage * 0.4;
+  let myGoals, oppGoals;
+  if (rand > 0.35) { // win
+    myGoals = Math.floor(Math.random()*3)+1;
+    oppGoals = Math.floor(Math.random()*2);
+  } else if (rand < -0.35) { // loss
+    myGoals = Math.floor(Math.random()*2);
+    oppGoals = Math.floor(Math.random()*3)+1;
+  } else { // draw
+    myGoals = Math.floor(Math.random()*3);
+    oppGoals = myGoals;
+  }
+
+  // Commentary events
+  const events = buildEvents(myGoals, oppGoals);
+
+  let eventIdx = 0;
+  let minute = 0;
+  const commentary = document.getElementById('commentary');
+  const bar = document.getElementById('matchProgress');
+  const score = document.getElementById('matchScore');
+  let displayMyG = 0, displayOppG = 0;
+
+  const interval = setInterval(() => {
+    minute++;
+    const pct = (minute / 90) * 100;
+    bar.style.width = pct + '%';
+    // Check events
+    while (eventIdx < events.length && events[eventIdx].min <= minute) {
+      const ev = events[eventIdx];
+      const p = document.createElement('p');
+      p.className = ev.type;
+      p.innerHTML = `<span class="minute">${ev.min}'</span>${ev.text}`;
+      commentary.appendChild(p);
+      commentary.scrollTop = commentary.scrollHeight;
+      if (ev.myGoal) { displayMyG++; score.textContent = `${displayMyG} : ${displayOppG}`; }
+      if (ev.oppGoal) { displayOppG++; score.textContent = `${displayMyG} : ${displayOppG}`; }
+      eventIdx++;
+    }
+    if (minute >= 90) {
+      clearInterval(interval);
+      bar.style.width = '100%';
+      bar.style.background = 'linear-gradient(90deg,#1a5aaa,#2a7acc)';
+      finalizeMatch(myGoals, oppGoals, opp);
+    }
+  }, 40); // fast simulation
+}
+
+function buildEvents(myG, oppG) {
+  const events = [];
+  const taken = new Set();
+  const getMin = (start=5, end=89) => {
+    let m; do { m = Math.floor(Math.random()*(end-start))+start; } while(taken.has(m));
+    taken.add(m); return m;
+  };
+  const myNames = Object.values(squad).flat()
+    .filter(id => {
+      const p = ALL_PLAYERS.find(x=>x.id===id);
+      return p.pos !== 'GK';
+    }).map(id => ALL_PLAYERS.find(x=>x.id===id).name);
+  const oppNames = ['Haaland','Vinicius','Mbappe','Bellingham','Son','Osimhen'];
+
+  for (let i=0; i<myG; i++) {
+    const m = getMin();
+    const scorer = myNames[Math.floor(Math.random()*myNames.length)] || '球员';
+    events.push({ min:m, type:'goal', text:`⚽ 进球！${scorer} 攻破对方大门！`, myGoal:true });
+  }
+  for (let i=0; i<oppG; i++) {
+    const m = getMin();
+    const scorer = oppNames[Math.floor(Math.random()*oppNames.length)];
+    events.push({ min:m, type:'goal', text:`⚽ 失球！${scorer} 为对方打入一球`, oppGoal:true });
+  }
+  // Add flavor events
+  const flavors = [
+    { min:getMin(5,30), type:'chance', text:'💨 我方快速反击，射门偏出！' },
+    { min:getMin(31,60), type:'save',  text:'🧤 守门员做出精彩扑救！' },
+    { min:getMin(61,88), type:'chance',text:'🔥 精彩配合，但射门被封堵' },
+    { min:getMin(5,88),  type:'normal', text:'📋 裁判出示黄牌' },
+  ];
+  events.push(...flavors);
+  events.sort((a,b) => a.min - b.min);
+  return events;
+}
+
+function finalizeMatch(myG, oppG, opp) {
+  const s = leagueState.standings;
+  const mine = s.find(x=>x.mine);
+  const oppStand = s.find(x=>x.name===opp.name);
+  mine.gf += myG; mine.ga += oppG;
+  oppStand.gf += oppG; oppStand.ga += myG;
+  let result, pts;
+  if (myG > oppG) {
+    mine.w++; mine.pts+=3; oppStand.l++; result='win';
+    pts=3;
+  } else if (myG === oppG) {
+    mine.d++; mine.pts+=1; oppStand.d++; oppStand.pts+=1; result='draw';
+    pts=1;
+  } else {
+    mine.l++; oppStand.w++; oppStand.pts+=3; result='loss';
+    pts=0;
+  }
+  // Simulate AI pts for remaining opponents (other AI matches)
+  s.filter(x => !x.mine && x.name !== opp.name).forEach(t => {
+    const rng = Math.random();
+    if (rng > .55) { t.w++; t.pts+=3; } else if (rng > .3) { t.d++; t.pts+=1; } else { t.l++; }
+    t.gf += Math.floor(Math.random()*4);
+    t.ga += Math.floor(Math.random()*4);
+  });
+
+  const msgs = { win:`🏆 胜利！+${pts}分`, draw:`🤝 平局！+${pts}分`, loss:`😔 失败！+${pts}分` };
+  const bannerCls = { win:'result-win', draw:'result-draw', loss:'result-loss' };
+  document.getElementById('resultArea').innerHTML = `
+    <div class="result-banner ${bannerCls[result]}">${msgs[result]}</div>`;
+
+  // Sort standings
+  s.sort((a,b) => b.pts-a.pts || (b.gf-b.ga)-(a.gf-a.ga));
+  renderStandingsTable();
+
+  const nextRound = leagueState.round + 1;
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'next-btn';
+  nextBtn.textContent = nextRound < 5 ? `下一场 → 第 ${nextRound+1} 轮` : '🏆 查看最终结果';
+  nextBtn.onclick = () => {
+    leagueState.round++;
+    renderLeague();
+  };
+  document.getElementById('standingsArea').appendChild(nextBtn);
+}
+
+function renderStandingsTable() {
+  const s = leagueState.standings;
+  const medals = ['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣'];
+  let html = `<div class="section-title" style="margin-top:20px">积分榜</div>
+  <table class="league-table">
+    <thead><tr>
+      <th>#</th><th>球队</th><th>积分</th><th>胜</th><th>平</th><th>负</th><th>净胜</th>
+    </tr></thead><tbody>`;
+  s.forEach((t,i) => {
+    html += `<tr class="${t.mine?'my-team':''}">
+      <td>${medals[i]||i+1}</td>
+      <td>${t.mine?'⭐ ':''} ${t.name}</td>
+      <td><b>${t.pts}</b></td>
+      <td>${t.w}</td><td>${t.d}</td><td>${t.l}</td>
+      <td>${t.gf-t.ga}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  const sa = document.getElementById('standingsArea');
+  sa.innerHTML = html;
+}
+
+function renderFinal() {
+  const area = document.getElementById('leagueArea');
+  const s = leagueState.standings;
+  s.sort((a,b) => b.pts-a.pts || (b.gf-b.ga)-(a.gf-a.ga));
+  const myRank = s.findIndex(x=>x.mine)+1;
+  const mine = s.find(x=>x.mine);
+  const medals = ['🥇','🥈','🥉','4️⃣','5️⃣'];
+  const msgs = {
+    1: '你赢得了联赛冠军！无与伦比！',
+    2: '亚军！距离冠军只差一步！',
+    3: '季军！下赛季再战！',
+    4: '第四名，还需加油！',
+    5: '未能进前三，重新备战吧！',
+  };
+  const trophyEmoji = myRank===1?'🏆':myRank===2?'🥈':myRank===3?'🥉':'😤';
+  const medals2 = ['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣'];
+  let standHtml = `<table class="league-table"><thead><tr><th>#</th><th>球队</th><th>积分</th><th>胜</th><th>平</th><th>负</th></tr></thead><tbody>`;
+  s.forEach((t,i) => {
+    standHtml += `<tr class="${t.mine?'my-team':''}"><td>${medals2[i]||i+1}</td><td>${t.mine?'⭐ ':''}${t.name}</td><td><b>${t.pts}</b></td><td>${t.w}</td><td>${t.d}</td><td>${t.l}</td></tr>`;
+  });
+  standHtml += '</tbody></table>';
+  area.innerHTML = `
+    <div class="final-screen">
+      <div class="trophy">${trophyEmoji}</div>
+      <div class="final-rank">${medals[myRank-1]||myRank} 第${myRank}名</div>
+      <div class="final-pts">${mine.pts} 积分 / 5 场</div>
+      <div class="final-msg">${msgs[myRank]||msgs[5]}</div>
+      ${standHtml}
+      <button class="play-again-btn" onclick="resetGame()">🔄 重新开始</button>
+    </div>`;
+}
+
+function resetGame() {
+  budget = 1000;
+  owned = [];
+  squad = { GK:[], DEF:[], MID:[], FW:[] };
+  leagueState = null;
+  renderMarket();
+  renderSquad();
+  switchTab('market');
+  document.getElementById('leagueArea').innerHTML = '<p style="color:#4a6a8a; text-align:center; padding:40px 0;">先组好阵容，再来这里开始联赛！</p>';
+}
+
+// ===================== UTILS =====================
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  const idx = ['market','squad','league'].indexOf(name);
+  document.querySelectorAll('.tab-btn')[idx].classList.add('active');
+}
+
+let toastTimer;
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.classList.remove('show'); }, 2200);
+}
+
+init();
+</script>
+</body>
+</html>
