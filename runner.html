@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#060d1a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>足球跑酷 ⚽</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #060d1a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      overflow: hidden;
+      user-select: none;
+    }
+    #topbar {
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: rgba(255,255,255,0.04);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    #back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #7ee8a2;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 6px 14px;
+      border: 1px solid #7ee8a2;
+      border-radius: 20px;
+      transition: all 0.2s;
+    }
+    #back-btn:hover { background: #7ee8a2; color: #060d1a; }
+    #game-title {
+      color: #fff;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+    #score-display {
+      color: #ffd700;
+      font-size: 15px;
+      font-weight: 700;
+    }
+    #canvas-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 800px;
+      margin-top: 8px;
+    }
+    #gameCanvas {
+      display: block;
+      width: 100%;
+      background: #060d1a;
+      border-radius: 12px;
+      border: 1px solid rgba(126,232,162,0.15);
+      touch-action: none;
+    }
+    #instructions {
+      color: rgba(255,255,255,0.45);
+      font-size: 12px;
+      margin-top: 8px;
+      text-align: center;
+      letter-spacing: 0.5px;
+    }
+  </style>
+</head>
+<body>
+  <div id="topbar">
+    <a id="back-btn" href="hub.html">← 返回</a>
+    <span id="game-title">⚽ 足球跑酷</span>
+    <span id="score-display">最高: <span id="hi-score-top">0</span></span>
+  </div>
+  <div id="canvas-wrapper">
+    <canvas id="gameCanvas"></canvas>
+  </div>
+  <p id="instructions">空格/点击 跳跃 · 双跳可用 · 收集足球和金币</p>
+
+<script>
+(function() {
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const hiScoreEl = document.getElementById('hi-score-top');
+
+  // Responsive sizing
+  const BASE_W = 800, BASE_H = 320;
+  let scale = 1;
+  function resize() {
+    const wrapper = document.getElementById('canvas-wrapper');
+    const w = Math.min(wrapper.clientWidth, BASE_W);
+    scale = w / BASE_W;
+    canvas.width = BASE_W;
+    canvas.height = BASE_H;
+    canvas.style.width = w + 'px';
+    canvas.style.height = (BASE_H * scale) + 'px';
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // Constants
+  const GROUND_Y = BASE_H - 60;
+  const GRAVITY = 0.55;
+  const JUMP_FORCE = -13;
+  const PLAYER_X = 100;
+
+  // Game state
+  let state = 'start'; // start | playing | dead
+  let score = 0;
+  let hiScore = parseInt(localStorage.getItem('football_runner_hi') || '0');
+  let frameCount = 0;
+  let gameSpeed = 5;
+  let bgOffset = 0;
+
+  hiScoreEl.textContent = hiScore;
+
+  // Player
+  const player = {
+    x: PLAYER_X, y: GROUND_Y,
+    w: 36, h: 52,
+    vy: 0,
+    jumpsLeft: 2,
+    grounded: false,
+    legPhase: 0,
+    dead: false
+  };
+
+  // Object pools
+  let obstacles = [];
+  let collectibles = [];
+  let particles = [];
+  let bgLines = [];
+
+  // BG field lines
+  for (let i = 0; i < 5; i++) {
+    bgLines.push({ x: i * 200 });
+  }
+
+  // ---- Spawn helpers ----
+  function spawnObstacle() {
+    const types = ['redcard', 'player', 'goalpost'];
+    const type = types[Math.floor(Math.random() * types.length)];
+    let h, w;
+    if (type === 'redcard')  { w = 28; h = 38; }
+    else if (type === 'player') { w = 42; h = 52; }
+    else { w = 22; h = 70; }
+    obstacles.push({ type, x: BASE_W + 20, y: GROUND_Y + player.h - h, w, h });
+  }
+
+  function spawnCollectible() {
+    const type = Math.random() < 0.6 ? 'ball' : 'coin';
+    const h = 28;
+    const yVariants = [GROUND_Y + player.h - h, GROUND_Y + player.h - h - 50, GROUND_Y + player.h - h - 100];
+    const y = yVariants[Math.floor(Math.random() * yVariants.length)];
+    collectibles.push({ type, x: BASE_W + 20, y, w: h, h, spin: 0 });
+  }
+
+  function spawnParticles(x, y, color, n) {
+    for (let i = 0; i < n; i++) {
+      particles.push({
+        x, y,
+        vx: (Math.random() - 0.5) * 6,
+        vy: (Math.random() - 0.8) * 6,
+        r: Math.random() * 5 + 2,
+        color,
+        life: 1
+      });
+    }
+  }
+
+  // ---- Input ----
+  function jump() {
+    if (state === 'start' || state === 'dead') {
+      startGame(); return;
+    }
+    if (player.jumpsLeft > 0) {
+      player.vy = JUMP_FORCE;
+      player.jumpsLeft--;
+      if (!player.grounded) spawnParticles(player.x + player.w/2, player.y + player.h, '#7ee8a2', 5);
+    }
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.code === 'Space' || e.code === 'ArrowUp') { e.preventDefault(); jump(); }
+  });
+  canvas.addEventListener('pointerdown', e => { e.preventDefault(); jump(); });
+
+  // ---- Game control ----
+  function startGame() {
+    state = 'playing';
+    score = 0;
+    frameCount = 0;
+    gameSpeed = 5;
+    obstacles = [];
+    collectibles = [];
+    particles = [];
+    player.y = GROUND_Y;
+    player.vy = 0;
+    player.jumpsLeft = 2;
+    player.grounded = true;
+    player.dead = false;
+  }
+
+  function endGame() {
+    state = 'dead';
+    player.dead = true;
+    if (score > hiScore) {
+      hiScore = score;
+      localStorage.setItem('football_runner_hi', hiScore);
+      hiScoreEl.textContent = hiScore;
+    }
+    spawnParticles(player.x + player.w/2, player.y + player.h/2, '#ff4455', 20);
+  }
+
+  // ---- AABB collision ----
+  function overlaps(a, b) {
+    return a.x < b.x + b.w && a.x + a.w > b.x &&
+           a.y < b.y + b.h && a.y + a.h > b.y;
+  }
+
+  // ---- Draw helpers ----
+  function drawGround() {
+    // Grass base
+    ctx.fillStyle = '#1a5c2a';
+    ctx.fillRect(0, GROUND_Y + player.h, BASE_W, BASE_H - GROUND_Y - player.h);
+
+    // Lighter band
+    ctx.fillStyle = '#1e6b30';
+    ctx.fillRect(0, GROUND_Y + player.h, BASE_W, 12);
+
+    // Field lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 2;
+    bgLines.forEach(l => {
+      ctx.beginPath();
+      ctx.moveTo(l.x, GROUND_Y + player.h);
+      ctx.lineTo(l.x, BASE_H);
+      ctx.stroke();
+    });
+
+    // Ground line
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, GROUND_Y + player.h);
+    ctx.lineTo(BASE_W, GROUND_Y + player.h);
+    ctx.stroke();
+  }
+
+  function drawBackground() {
+    // Sky gradient
+    const grad = ctx.createLinearGradient(0, 0, 0, GROUND_Y + player.h);
+    grad.addColorStop(0, '#060d1a');
+    grad.addColorStop(0.6, '#0b1a2e');
+    grad.addColorStop(1, '#0f2840');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, BASE_W, GROUND_Y + player.h);
+
+    // Stars
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    const starSeed = [50,120,200,320,430,550,650,740,30,90,160,260,370,480,600,700];
+    for (let i = 0; i < starSeed.length; i++) {
+      const sx = (starSeed[i] + bgOffset * 0.05) % BASE_W;
+      const sy = 20 + (i * 17) % (GROUND_Y * 0.6);
+      ctx.beginPath();
+      ctx.arc(sx, sy, 0.8, 0, Math.PI*2);
+      ctx.fill();
+    }
+  }
+
+  // Draw stick-figure runner
+  function drawPlayer() {
+    const px = player.x, py = player.y;
+    const pw = player.w, ph = player.h;
+    const cx = px + pw/2;
+
+    if (player.dead) {
+      // Fallen
+      ctx.save();
+      ctx.translate(cx, py + ph * 0.5);
+      ctx.rotate(Math.PI / 2);
+      drawRunnerShape(0, 0, 0);
+      ctx.restore();
+      return;
+    }
+
+    const legSwing = player.grounded ? Math.sin(player.legPhase) * 18 : 0;
+    drawRunnerShape(cx, py, legSwing);
+  }
+
+  function drawRunnerShape(cx, py, legSwing) {
+    const ph = player.h;
+    ctx.save();
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.beginPath();
+    ctx.ellipse(cx, GROUND_Y + player.h + 2, 18, 5, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // Body (jersey)
+    ctx.fillStyle = '#2ecc71';
+    ctx.beginPath();
+    ctx.roundRect(cx - 10, py + ph * 0.28, 20, ph * 0.32, 4);
+    ctx.fill();
+
+    // Number on jersey
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 11px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('10', cx, py + ph * 0.5);
+
+    // Shorts
+    ctx.fillStyle = '#1a252f';
+    ctx.fillRect(cx - 10, py + ph * 0.58, 20, ph * 0.14);
+
+    // Head
+    ctx.fillStyle = '#f5c39e';
+    ctx.beginPath();
+    ctx.arc(cx, py + ph * 0.15, 12, 0, Math.PI*2);
+    ctx.fill();
+
+    // Hair
+    ctx.fillStyle = '#3d2314';
+    ctx.beginPath();
+    ctx.arc(cx, py + ph * 0.12, 12, Math.PI, 0);
+    ctx.fill();
+
+    // Eyes
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(cx - 4, py + ph * 0.14, 2.5, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + 4, py + ph * 0.14, 2.5, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#222';
+    ctx.beginPath(); ctx.arc(cx - 4, py + ph * 0.14, 1.2, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + 4, py + ph * 0.14, 1.2, 0, Math.PI*2); ctx.fill();
+
+    // Arms
+    ctx.strokeStyle = '#2ecc71';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    const armSwing = legSwing * 0.5;
+    ctx.beginPath();
+    ctx.moveTo(cx - 10, py + ph * 0.32);
+    ctx.lineTo(cx - 18, py + ph * 0.32 + armSwing);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx + 10, py + ph * 0.32);
+    ctx.lineTo(cx + 18, py + ph * 0.32 - armSwing);
+    ctx.stroke();
+
+    // Legs
+    ctx.strokeStyle = '#1a252f';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(cx - 5, py + ph * 0.72);
+    ctx.lineTo(cx - 8, py + ph * 0.88 + legSwing * 0.5);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx + 5, py + ph * 0.72);
+    ctx.lineTo(cx + 8, py + ph * 0.88 - legSwing * 0.5);
+    ctx.stroke();
+
+    // Shoes
+    ctx.fillStyle = '#111';
+    ctx.beginPath(); ctx.ellipse(cx - 8, py + ph * 0.9 + legSwing*0.5, 8, 4, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx + 8, py + ph * 0.9 - legSwing*0.5, 8, 4, 0, 0, Math.PI*2); ctx.fill();
+
+    ctx.restore();
+  }
+
+  function drawObstacle(o) {
+    ctx.save();
+    ctx.font = '28px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+
+    if (o.type === 'redcard') {
+      // Red card with glow
+      ctx.shadowColor = '#ff0000';
+      ctx.shadowBlur = 12;
+      ctx.fillStyle = '#e50000';
+      ctx.beginPath();
+      ctx.roundRect(o.x, o.y, o.w, o.h, 4);
+      ctx.fill();
+      ctx.strokeStyle = '#ff6666';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 12px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🟥', o.x + o.w/2, o.y + o.h/2);
+    } else if (o.type === 'player') {
+      // Fallen player
+      ctx.save();
+      ctx.translate(o.x + o.w/2, o.y + o.h/2);
+      ctx.rotate(Math.PI / 2);
+      drawRunnerShape(0, -o.h/2, 0);
+      ctx.restore();
+      // Injury indicator
+      ctx.fillStyle = '#ff4';
+      ctx.font = '16px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('😵', o.x + o.w/2, o.y - 4);
+    } else {
+      // Goal post
+      ctx.fillStyle = '#e8e8e8';
+      ctx.shadowColor = '#aaa';
+      ctx.shadowBlur = 6;
+      // Post
+      ctx.fillRect(o.x, o.y, 6, o.h);
+      // Crossbar
+      ctx.fillRect(o.x, o.y, o.w, 6);
+      // Net effect
+      ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.moveTo(o.x + 6, o.y + 6 + i * 20);
+        ctx.lineTo(o.x + o.w, o.y + 6 + i * 20);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawCollectible(c) {
+    ctx.save();
+    ctx.translate(c.x + c.w/2, c.y + c.h/2);
+    ctx.rotate(c.spin);
+
+    if (c.type === 'ball') {
+      // Soccer ball
+      const r = c.w / 2;
+      ctx.shadowColor = '#7ee8a2';
+      ctx.shadowBlur = 8;
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI*2); ctx.fill();
+      // Pentagon patches
+      ctx.fillStyle = '#111';
+      ctx.beginPath(); ctx.arc(0, 0, r*0.35, 0, Math.PI*2); ctx.fill();
+      for (let i = 0; i < 5; i++) {
+        const a = (i / 5) * Math.PI * 2 - Math.PI/2;
+        const px2 = Math.cos(a) * r * 0.6;
+        const py2 = Math.sin(a) * r * 0.6;
+        ctx.beginPath(); ctx.arc(px2, py2, r*0.2, 0, Math.PI*2); ctx.fill();
+      }
+      ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI*2); ctx.stroke();
+    } else {
+      // Gold coin
+      const r = c.w / 2;
+      ctx.shadowColor = '#ffd700';
+      ctx.shadowBlur = 10;
+      const g = ctx.createRadialGradient(-r*0.3, -r*0.3, 1, 0, 0, r);
+      g.addColorStop(0, '#ffe566');
+      g.addColorStop(0.7, '#ffd700');
+      g.addColorStop(1, '#c8a000');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#c8a000';
+      ctx.font = `bold ${r}px serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('$', 0, 1);
+    }
+    ctx.restore();
+  }
+
+  function drawParticles() {
+    particles.forEach(p => {
+      ctx.save();
+      ctx.globalAlpha = p.life;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r * p.life, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    });
+  }
+
+  function drawHUD() {
+    // Score bg
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.beginPath();
+    ctx.roundRect(BASE_W - 160, 10, 150, 44, 10);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffd700';
+    ctx.font = 'bold 20px Arial';
+    ctx.textAlign = 'right';
+    ctx.fillText(score, BASE_W - 18, 30);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = '11px Arial';
+    ctx.fillText('最高: ' + hiScore, BASE_W - 18, 46);
+
+    // Speed indicator
+    const speedBarW = 80;
+    const speedPct = Math.min((gameSpeed - 5) / 10, 1);
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.beginPath(); ctx.roundRect(10, 14, speedBarW, 8, 4); ctx.fill();
+    const barGrad = ctx.createLinearGradient(10, 0, 10 + speedBarW, 0);
+    barGrad.addColorStop(0, '#7ee8a2');
+    barGrad.addColorStop(1, '#ff4444');
+    ctx.fillStyle = barGrad;
+    ctx.beginPath(); ctx.roundRect(10, 14, speedBarW * speedPct, 8, 4); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = '9px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText('速度', 10, 34);
+
+    // Jump indicator
+    for (let i = 0; i < 2; i++) {
+      ctx.strokeStyle = i < player.jumpsLeft ? '#7ee8a2' : 'rgba(255,255,255,0.2)';
+      ctx.lineWidth = 2;
+      ctx.fillStyle = i < player.jumpsLeft ? '#7ee8a2' : 'transparent';
+      ctx.beginPath();
+      ctx.arc(16 + i * 20, 50, 6, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = '9px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText('跳', 44, 54);
+  }
+
+  function drawStartScreen() {
+    ctx.fillStyle = 'rgba(6,13,26,0.85)';
+    ctx.fillRect(0, 0, BASE_W, BASE_H);
+
+    ctx.save();
+    ctx.shadowColor = '#7ee8a2';
+    ctx.shadowBlur = 20;
+    ctx.font = 'bold 42px Arial';
+    ctx.fillStyle = '#7ee8a2';
+    ctx.textAlign = 'center';
+    ctx.fillText('⚽ 足球跑酷', BASE_W/2, BASE_H * 0.32);
+    ctx.restore();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    ctx.font = '18px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('点击或按空格键开始', BASE_W/2, BASE_H * 0.52);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = '13px Arial';
+    ctx.fillText('收集 ⚽+10分  💰+5分  · 双跳可用', BASE_W/2, BASE_H * 0.67);
+
+    if (hiScore > 0) {
+      ctx.fillStyle = '#ffd700';
+      ctx.font = 'bold 15px Arial';
+      ctx.fillText('🏆 最高分: ' + hiScore, BASE_W/2, BASE_H * 0.82);
+    }
+
+    // Pulse dot
+    const pulse = 0.5 + 0.5 * Math.sin(frameCount * 0.05);
+    ctx.globalAlpha = pulse;
+    ctx.fillStyle = '#7ee8a2';
+    ctx.beginPath();
+    ctx.arc(BASE_W/2, BASE_H * 0.52 + 28, 4, 0, Math.PI*2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  function drawDeadScreen() {
+    ctx.fillStyle = 'rgba(6,13,26,0.88)';
+    ctx.fillRect(0, 0, BASE_W, BASE_H);
+
+    ctx.save();
+    ctx.shadowColor = '#ff4444';
+    ctx.shadowBlur = 20;
+    ctx.font = 'bold 36px Arial';
+    ctx.fillStyle = '#ff4444';
+    ctx.textAlign = 'center';
+    ctx.fillText('😵 游戏结束', BASE_W/2, BASE_H * 0.28);
+    ctx.restore();
+
+    ctx.fillStyle = '#ffd700';
+    ctx.font = 'bold 28px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('得分: ' + score, BASE_W/2, BASE_H * 0.48);
+
+    if (score >= hiScore) {
+      ctx.fillStyle = '#7ee8a2';
+      ctx.font = 'bold 16px Arial';
+      ctx.fillText('🎉 新纪录！', BASE_W/2, BASE_H * 0.62);
+    } else {
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.font = '14px Arial';
+      ctx.fillText('最高分: ' + hiScore, BASE_W/2, BASE_H * 0.62);
+    }
+
+    // Restart button
+    ctx.fillStyle = '#7ee8a2';
+    ctx.beginPath();
+    ctx.roundRect(BASE_W/2 - 80, BASE_H * 0.74, 160, 40, 20);
+    ctx.fill();
+    ctx.fillStyle = '#060d1a';
+    ctx.font = 'bold 16px Arial';
+    ctx.fillText('▶ 再来一局', BASE_W/2, BASE_H * 0.74 + 25);
+  }
+
+  // ---- Update ----
+  function update() {
+    frameCount++;
+    bgOffset += gameSpeed * 0.5;
+
+    // Scroll bg lines
+    bgLines.forEach(l => {
+      l.x -= gameSpeed * 0.3;
+      if (l.x < -2) l.x += BASE_W;
+    });
+
+    if (state !== 'playing') return;
+
+    // Speed scaling
+    gameSpeed = 5 + Math.floor(score / 80) * 0.7;
+    if (gameSpeed > 15) gameSpeed = 15;
+
+    // Player physics
+    player.vy += GRAVITY;
+    player.y += player.vy;
+
+    if (player.y >= GROUND_Y) {
+      player.y = GROUND_Y;
+      player.vy = 0;
+      player.grounded = true;
+      player.jumpsLeft = 2;
+    } else {
+      player.grounded = false;
+    }
+
+    player.legPhase += player.grounded ? 0.22 : 0;
+
+    // Increment score
+    if (frameCount % 6 === 0) score++;
+
+    // Spawn obstacles
+    const spawnInterval = Math.max(60, 120 - Math.floor(score / 40) * 5);
+    if (frameCount % spawnInterval === 0) spawnObstacle();
+
+    // Spawn collectibles
+    const collectInterval = Math.max(80, 140 - Math.floor(score / 60) * 5);
+    if (frameCount % collectInterval === 0 && Math.random() < 0.7) spawnCollectible();
+
+    // Move obstacles
+    obstacles.forEach(o => { o.x -= gameSpeed; });
+    obstacles = obstacles.filter(o => o.x > -100);
+
+    // Move collectibles
+    collectibles.forEach(c => {
+      c.x -= gameSpeed;
+      c.spin += 0.05;
+    });
+    collectibles = collectibles.filter(c => c.x > -50);
+
+    // Update particles
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.2;
+      p.life -= 0.04;
+    });
+    particles = particles.filter(p => p.life > 0);
+
+    // Collision - hitbox slightly smaller for fairness
+    const hb = {
+      x: player.x + 6,
+      y: player.y + 4,
+      w: player.w - 12,
+      h: player.h - 8
+    };
+
+    for (const o of obstacles) {
+      const ob = { x: o.x + 3, y: o.y + 3, w: o.w - 6, h: o.h - 6 };
+      if (overlaps(hb, ob)) {
+        endGame(); break;
+      }
+    }
+
+    for (let i = collectibles.length - 1; i >= 0; i--) {
+      const c = collectibles[i];
+      if (overlaps(hb, { x: c.x, y: c.y, w: c.w, h: c.h })) {
+        const pts = c.type === 'ball' ? 10 : 5;
+        score += pts;
+        spawnParticles(c.x + c.w/2, c.y + c.h/2, c.type === 'ball' ? '#7ee8a2' : '#ffd700', 8);
+        collectibles.splice(i, 1);
+        // Floating text
+        particles.push({
+          x: c.x + c.w/2, y: c.y,
+          vx: 0, vy: -1.5,
+          r: 0, color: c.type === 'ball' ? '#7ee8a2' : '#ffd700',
+          life: 1.2,
+          text: '+' + pts
+        });
+      }
+    }
+
+    hiScoreEl.textContent = hiScore;
+  }
+
+  // ---- Draw ----
+  function draw() {
+    ctx.clearRect(0, 0, BASE_W, BASE_H);
+
+    drawBackground();
+    drawGround();
+    collectibles.forEach(drawCollectible);
+    obstacles.forEach(drawObstacle);
+    drawPlayer();
+    drawParticles();
+
+    // Floating score texts
+    particles.forEach(p => {
+      if (p.text) {
+        ctx.save();
+        ctx.globalAlpha = p.life / 1.2;
+        ctx.fillStyle = p.color;
+        ctx.font = 'bold 16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(p.text, p.x, p.y);
+        ctx.restore();
+      }
+    });
+
+    drawHUD();
+
+    if (state === 'start') drawStartScreen();
+    else if (state === 'dead') drawDeadScreen();
+  }
+
+  // ---- Loop ----
+  function loop() {
+    update();
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  loop();
+})();
+</script>
+</body>
+</html>
