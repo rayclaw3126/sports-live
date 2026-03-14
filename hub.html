@@ -3,259 +3,471 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>⚽ Sports Live - Game Hub</title>
+<title>SPORTS CLUB | Premium Gaming</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-:root{--bg:#060d1a;--card:#0d1b2e;--border:#1a3050;--blue:#2563eb;--accent:#38bdf8;--text:#e2e8f0;--text2:#94a3b8;--green:#22c55e;--gold:#f59e0b;--purple:#7c3aed}
-body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;min-height:100vh;background-image:radial-gradient(ellipse at top,#0a1628 0%,#060d1a 60%)}
+  :root {
+    --bg-base: #0a0a0c;
+    --panel-bg: rgba(20, 22, 28, 0.7);
+    --panel-border: rgba(255, 255, 255, 0.06);
+    --primary: #d4af37; /* Luxury Gold */
+    --primary-glow: rgba(212, 175, 55, 0.3);
+    --accent: #00e5ff; /* Cyber Cyan */
+    --accent-glow: rgba(0, 229, 255, 0.3);
+    --danger: #ff2a40;
+    --text-main: #f8fafc;
+    --text-muted: #8b949e;
+  }
+  
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  
+  body {
+    background-color: var(--bg-base);
+    background-image: 
+      radial-gradient(circle at 0% 0%, rgba(0, 229, 255, 0.08) 0%, transparent 40%),
+      radial-gradient(circle at 100% 100%, rgba(212, 175, 55, 0.08) 0%, transparent 40%);
+    background-attachment: fixed;
+    color: var(--text-main);
+    font-family: 'Montserrat', sans-serif;
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
 
-/* HEADER */
-.header{padding:20px 16px 0;text-align:center}
-.logo-big{font-size:3.5rem;filter:drop-shadow(0 0 20px rgba(56,189,248,0.5));animation:float 3s ease-in-out infinite}
-@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-.title{font-size:1.8rem;font-weight:900;background:linear-gradient(90deg,#38bdf8,#818cf8,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-top:8px}
-.subtitle{font-size:0.75rem;color:var(--text2);margin-top:4px;letter-spacing:2px}
-.live-row{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:10px}
-.live-dot{width:8px;height:8px;background:#ef4444;border-radius:50%;animation:pulse 1.2s infinite;box-shadow:0 0 8px #ef4444}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
-.live-txt{font-size:0.7rem;color:#ef4444;font-weight:700;letter-spacing:2px}
+  a { text-decoration: none; }
 
-/* STATS */
-.stats-wrap{max-width:480px;margin:20px auto 0;padding:0 16px}
-.stats-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center}
-.stat-card .num{font-size:1.5rem;font-weight:900}
-.stat-card .lbl{font-size:0.6rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+  /* Hero Section */
+  .hero {
+    padding: 40px 20px 30px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    border-bottom: 1px solid var(--panel-border);
+    background: linear-gradient(180deg, rgba(20,22,28,0) 0%, rgba(20,22,28,0.8) 100%);
+  }
+  
+  .hero-title {
+    font-size: 2.2rem;
+    font-weight: 900;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    background: linear-gradient(90deg, #fff, var(--primary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+  
+  .hero-subtitle {
+    font-size: 0.65rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: 6px;
+    text-transform: uppercase;
+  }
 
-/* GAME GRID */
-.games-wrap{max-width:480px;margin:20px auto 0;padding:0 16px 24px}
-.section-lbl{font-size:0.7rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
-.section-lbl::after{content:'';flex:1;height:1px;background:var(--border)}
+  .live-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding: 6px 12px;
+    background: rgba(255, 42, 64, 0.1);
+    border: 1px solid rgba(255, 42, 64, 0.2);
+    border-radius: 20px;
+  }
 
-/* GAME CARDS */
-.game-card{display:block;text-decoration:none;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:0;margin-bottom:12px;overflow:hidden;transition:all 0.2s;position:relative}
-.game-card:active{transform:scale(0.98)}
-.game-card:hover{border-color:var(--accent);box-shadow:0 4px 20px rgba(56,189,248,0.15)}
-.card-banner{height:120px;display:flex;align-items:center;justify-content:center;font-size:4rem;position:relative;overflow:hidden}
-.card-banner::after{content:'';position:absolute;inset:0;background:linear-gradient(transparent 60%,var(--card))}
-.card-body{padding:12px 14px 14px}
-.card-title{font-size:1rem;font-weight:800;color:var(--text)}
-.card-desc{font-size:0.75rem;color:var(--text2);margin-top:3px}
-.card-tags{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
-.tag{font-size:0.62rem;font-weight:700;padding:3px 8px;border-radius:10px}
-.tag-blue{background:rgba(37,99,235,0.2);color:var(--accent)}
-.tag-green{background:rgba(34,197,94,0.2);color:var(--green)}
-.tag-gold{background:rgba(245,158,11,0.2);color:var(--gold)}
-.tag-purple{background:rgba(124,58,237,0.2);color:#a78bfa}
-.card-arrow{position:absolute;top:14px;right:14px;font-size:1.2rem;color:var(--text2)}
-.hot-badge{position:absolute;top:10px;left:10px;background:linear-gradient(135deg,#ef4444,#f59e0b);color:#fff;font-size:0.62rem;font-weight:800;padding:3px 8px;border-radius:20px;letter-spacing:1px;z-index:5}
-.new-badge{position:absolute;top:10px;left:10px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:0.62rem;font-weight:800;padding:3px 8px;border-radius:20px;letter-spacing:1px;z-index:5}
+  .live-dot {
+    width: 6px; height: 6px;
+    background-color: var(--danger);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--danger);
+    animation: pulse 1.5s infinite;
+  }
 
-/* SCORES CARD */
-.scores-card{display:block;text-decoration:none;background:linear-gradient(135deg,rgba(37,99,235,0.2),rgba(56,189,248,0.1));border:1px solid rgba(56,189,248,0.3);border-radius:16px;padding:16px;margin-bottom:12px;display:flex;align-items:center;gap:14px;transition:all 0.2s}
-.scores-card:active{transform:scale(0.98)}
-.scores-icon{font-size:2.5rem;flex-shrink:0}
-.scores-text{}
-.scores-title{font-size:1rem;font-weight:800}
-.scores-desc{font-size:0.75rem;color:var(--text2);margin-top:2px}
+  .live-text {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--danger);
+    letter-spacing: 2px;
+  }
 
-/* BANNER AD AREA */
-.promo-banner{background:linear-gradient(135deg,#0f2044,#1a0a3a);border:1px solid rgba(168,85,247,0.3);border-radius:14px;padding:16px;text-align:center;margin-bottom:12px}
-.promo-title{font-size:0.85rem;font-weight:800;color:#e9d5ff}
-.promo-desc{font-size:0.7rem;color:var(--text2);margin-top:4px}
-.promo-btn{display:inline-block;margin-top:10px;background:linear-gradient(135deg,#7c3aed,#4c1d95);color:#fff;font-size:0.78rem;font-weight:700;padding:8px 20px;border-radius:20px;text-decoration:none;border:none;cursor:pointer}
+  @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.2); } }
+
+  /* Account Dashboard */
+  .dashboard {
+    max-width: 500px;
+    margin: -20px auto 30px;
+    padding: 0 20px;
+    position: relative;
+    z-index: 10;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    background: var(--panel-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 16px 0;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  }
+
+  .stat-item {
+    text-align: center;
+    border-right: 1px solid var(--panel-border);
+  }
+  .stat-item:last-child { border-right: none; }
+
+  .stat-value {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--text-main);
+    margin-bottom: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-value.gold { color: var(--primary); text-shadow: 0 0 10px var(--primary-glow); }
+  .stat-value.cyan { color: var(--accent); text-shadow: 0 0 10px var(--accent-glow); }
+
+  .stat-label {
+    font-size: 0.55rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* Games Layout */
+  .container {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  .section-header {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-main);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin: 30px 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-header::after {
+    content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--panel-border), transparent);
+  }
+
+  /* Premium Card Design */
+  .game-card {
+    display: flex;
+    align-items: stretch;
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    position: relative;
+  }
+
+  .game-card:active { transform: scale(0.98); }
+  .game-card:hover { border-color: rgba(212, 175, 55, 0.4); box-shadow: 0 8px 25px rgba(0,0,0,0.4); }
+
+  .card-icon-area {
+    width: 100px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-right: 1px solid var(--panel-border);
+    position: relative;
+  }
+
+  .icon-svg { width: 40px; height: 40px; fill: none; stroke: var(--text-muted); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; transition: stroke 0.3s; }
+  .game-card:hover .icon-svg { stroke: var(--primary); filter: drop-shadow(0 0 8px var(--primary-glow)); }
+  .card-icon-area.cyan .icon-svg { stroke: var(--accent); }
+  .game-card:hover .card-icon-area.cyan .icon-svg { filter: drop-shadow(0 0 8px var(--accent-glow)); }
+
+  .card-content {
+    flex: 1;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .card-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-main);
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .card-desc {
+    font-size: 0.65rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+
+  .card-tags {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .tag {
+    font-size: 0.5rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 3px 6px;
+    border-radius: 4px;
+    border: 1px solid;
+  }
+  .tag.gold { color: var(--primary); border-color: rgba(212, 175, 55, 0.3); background: rgba(212, 175, 55, 0.05); }
+  .tag.cyan { color: var(--accent); border-color: rgba(0, 229, 255, 0.3); background: rgba(0, 229, 255, 0.05); }
+  .tag.gray { color: var(--text-muted); border-color: var(--panel-border); background: rgba(255,255,255,0.02); }
+
+  .chevron {
+    width: 16px; height: 16px; fill: none; stroke: var(--text-muted); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+  }
+
+  .badge-corner {
+    position: absolute;
+    top: 0; left: 0;
+    font-size: 0.5rem;
+    font-weight: 800;
+    padding: 4px 12px;
+    background: var(--primary);
+    color: #000;
+    letter-spacing: 1px;
+    border-bottom-right-radius: 8px;
+    z-index: 2;
+  }
+  .badge-corner.cyan { background: var(--accent); }
+  .badge-corner.red { background: var(--danger); color: #fff; }
+
+  /* Highlight Banner */
+  .vip-banner {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(212, 175, 55, 0.02));
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    margin-top: 40px;
+  }
+
+  .vip-title { font-size: 0.85rem; font-weight: 700; color: var(--primary); letter-spacing: 2px; margin-bottom: 6px; text-transform: uppercase; }
+  .vip-desc { font-size: 0.65rem; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5; }
+  
+  .btn-vip {
+    display: inline-block;
+    background: var(--primary);
+    color: #000;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding: 10px 24px;
+    border-radius: 4px;
+    transition: all 0.3s;
+  }
+  .btn-vip:hover { box-shadow: 0 0 20px var(--primary-glow); }
+
 </style>
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#2563eb">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Sports Live">
-  <link rel="apple-touch-icon" href="icon-192.png">
 </head>
 <body>
 
-<!-- Header -->
-<div class="header">
-  <div class="logo-big">⚽</div>
-  <div class="title">Sports Live</div>
-  <div class="subtitle">体育娱乐平台 · SPORTS ENTERTAINMENT · ហ្គេមកីឡា</div>
-  <div class="live-row">
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-title">SPORTS CLUB</div>
+  <div class="hero-subtitle">Premium Entertainment</div>
+  <div class="live-indicator">
     <div class="live-dot"></div>
-    <span class="live-txt">LIVE NOW</span>
+    <span class="live-text">GLOBAL SERVERS ONLINE</span>
   </div>
 </div>
 
-<!-- Stats -->
-<div class="stats-wrap">
+<!-- Dashboard -->
+<div class="dashboard">
   <div class="stats-grid">
-    <div class="stat-card">
-      <div class="num" id="totalCoins" style="color:var(--gold)">0</div>
-      <div class="lbl">💰 总积分</div>
+    <div class="stat-item">
+      <div class="stat-value gold" id="totalCoins">0</div>
+      <div class="stat-label">BALANCE</div>
     </div>
-    <div class="stat-card">
-      <div class="num" id="totalGoals" style="color:var(--green)">0</div>
-      <div class="lbl">⚽ 总进球</div>
+    <div class="stat-item">
+      <div class="stat-value cyan" id="totalGoals">0</div>
+      <div class="stat-label">GOALS</div>
     </div>
-    <div class="stat-card">
-      <div class="num" id="totalJackpots" style="color:#a855f7">0</div>
-      <div class="lbl">🏆 大奖</div>
+    <div class="stat-item">
+      <div class="stat-value" id="totalJackpots">0</div>
+      <div class="stat-label">JACKPOTS</div>
     </div>
   </div>
 </div>
 
-<!-- Games -->
-<div class="games-wrap">
+<div class="container">
 
-  <!-- Live Scores -->
-  <div class="section-lbl">🔴 即时比分</div>
-  <a href="index.html" class="scores-card">
-    <div class="scores-icon">📊</div>
-    <div class="scores-text">
-      <div class="scores-title">英超 · 西甲 · 意甲 · 德甲 · 法甲</div>
-      <div class="scores-desc">实时比分 · 积分榜 · AI预测分析</div>
+  <!-- MARKETS -->
+  <div class="section-header">MARKETS & DATA</div>
+
+  <a href="index.html" class="game-card">
+    <div class="badge-corner red">LIVE</div>
+    <div class="card-icon-area">
+      <!-- Activity/Chart Icon -->
+      <svg class="icon-svg" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
     </div>
-    <span style="color:var(--text2);margin-left:auto">→</span>
+    <div class="card-content">
+      <div class="card-title">LIVE MATCH CENTER <svg class="chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"></path></svg></div>
+      <div class="card-desc">Real-time scores, standings, and AI-driven match analytics.</div>
+      <div class="card-tags">
+        <span class="tag gray">PREMIER LEAGUE</span>
+        <span class="tag gray">LA LIGA</span>
+      </div>
+    </div>
   </a>
 
-  <!-- Games -->
-  <div class="section-lbl" style="margin-top:8px">🎮 迷你游戏</div>
+  <!-- CASINO & SKILL -->
+  <div class="section-header">PREMIUM GAMES</div>
 
-  <!-- Slots -->
   <a href="slots.html" class="game-card">
-    <span class="hot-badge">🔥 HOT</span>
-    <span class="card-arrow">→</span>
-    <div class="card-banner" style="background:linear-gradient(135deg,#1a0a3a,#2d1060)">🎰</div>
-    <div class="card-body">
-      <div class="card-title">足球老虎机</div>
-      <div class="card-desc">转动命运，赢取大奖！Football Slots</div>
+    <div class="badge-corner">HOT</div>
+    <div class="card-icon-area">
+      <!-- Slots/Casino Icon -->
+      <svg class="icon-svg" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><circle cx="15.5" cy="8.5" r="1.5"></circle><circle cx="15.5" cy="15.5" r="1.5"></circle><circle cx="8.5" cy="15.5" r="1.5"></circle></svg>
+    </div>
+    <div class="card-content">
+      <div class="card-title">FORTUNE SLOTS <svg class="chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"></path></svg></div>
+      <div class="card-desc">High-stakes simulation with up to 50x payout multipliers.</div>
       <div class="card-tags">
-        <span class="tag tag-gold">× 50 大奖</span>
-        <span class="tag tag-purple">免费转</span>
-        <span class="tag tag-green">积分游戏</span>
+        <span class="tag gold">50X JACKPOT</span>
+        <span class="tag gray">FREE SPINS</span>
       </div>
     </div>
   </a>
 
-  <!-- Penalty -->
   <a href="penalty.html" class="game-card">
-    <span class="new-badge">⚡ NEW</span>
-    <span class="card-arrow">→</span>
-    <div class="card-banner" style="background:linear-gradient(135deg,#0a2818,#1e5c1e)">⚽🧤</div>
-    <div class="card-body">
-      <div class="card-title">点球大战</div>
-      <div class="card-desc">6方向射门，守门员AI！Penalty Shootout</div>
+    <div class="card-icon-area cyan">
+      <!-- Target/Crosshair Icon -->
+      <svg class="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
+    </div>
+    <div class="card-content">
+      <div class="card-title">PRO PENALTY <svg class="chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"></path></svg></div>
+      <div class="card-desc">Tactical shootout simulation against adaptive Goalkeeper AI.</div>
       <div class="card-tags">
-        <span class="tag tag-blue">6方向</span>
-        <span class="tag tag-green">5球制</span>
-        <span class="tag tag-gold">力量系统</span>
+        <span class="tag cyan">6-ZONE TARGETING</span>
+        <span class="tag gray">POWER METRICS</span>
       </div>
     </div>
   </a>
 
-  <!-- Predict -->
   <a href="game.html" class="game-card">
-    <span class="card-arrow">→</span>
-    <div class="card-banner" style="background:linear-gradient(135deg,#0a1628,#1e3a5f)">🎯📊</div>
-    <div class="card-body">
-      <div class="card-title">猜比分</div>
-      <div class="card-desc">预测真实比赛结果，猜中得高分！Score Predictor</div>
+    <div class="card-icon-area">
+      <!-- Predict/Crystal Ball Icon -->
+      <svg class="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>
+    </div>
+    <div class="card-content">
+      <div class="card-title">SCORE PREDICTOR <svg class="chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"></path></svg></div>
+      <div class="card-desc">Forecast outcomes of real-world fixtures to earn balance.</div>
       <div class="card-tags">
-        <span class="tag tag-blue">真实数据</span>
-        <span class="tag tag-gold">+100分</span>
-        <span class="tag tag-green">每日更新</span>
+        <span class="tag gold">+100 PTS</span>
+        <span class="tag gray">REAL FIXTURES</span>
       </div>
     </div>
   </a>
 
-  <!-- Runner -->
-  <a href="runner.html" class="game-card">
-    <span class="new-badge">⚡ NEW</span>
-    <span class="card-arrow">→</span>
-    <div class="card-banner" style="background:linear-gradient(135deg,#0a2010,#1a4a20)">🏃⚽</div>
-    <div class="card-body">
-      <div class="card-title">足球跑酷</div>
-      <div class="card-desc">跳过障碍物，收集金币！Endless Runner</div>
-      <div class="card-tags">
-        <span class="tag tag-green">双跳</span>
-        <span class="tag tag-blue">无限关卡</span>
-        <span class="tag tag-gold">最高分挑战</span>
-      </div>
-    </div>
-  </a>
-
-  <!-- Cards -->
-  <a href="cards.html" class="game-card">
-    <span class="new-badge">⚡ NEW</span>
-    <span class="card-arrow">→</span>
-    <div class="card-banner" style="background:linear-gradient(135deg,#1a0a2a,#2d1060)">🃏⭐</div>
-    <div class="card-body">
-      <div class="card-title">球星卡牌对决</div>
-      <div class="card-desc">收集30张球星卡，智斗AI！Card Battle</div>
-      <div class="card-tags">
-        <span class="tag tag-gold">传奇卡</span>
-        <span class="tag tag-purple">梅西 C罗</span>
-        <span class="tag tag-blue">特技系统</span>
-      </div>
-    </div>
-  </a>
-
-  <!-- Match3 -->
-  <a href="match3.html" class="game-card">
-    <span class="new-badge">⚡ NEW</span>
-    <span class="card-arrow">→</span>
-    <div class="card-banner" style="background:linear-gradient(135deg,#0a1a2a,#0a3050)">🧩💥</div>
-    <div class="card-body">
-      <div class="card-title">足球消消乐</div>
-      <div class="card-desc">三消+炸弹特效，30步内冲高分！Match-3</div>
-      <div class="card-tags">
-        <span class="tag tag-blue">炸弹💥</span>
-        <span class="tag tag-green">连消奖励</span>
-        <span class="tag tag-gold">6×6格</span>
-      </div>
-    </div>
-  </a>
-
-  <!-- Manager -->
   <a href="manager.html" class="game-card">
-    <span class="new-badge">⚡ NEW</span>
-    <span class="card-arrow">→</span>
-    <div class="card-banner" style="background:linear-gradient(135deg,#0a1a0a,#1a3a1a)">🏆🏟️</div>
-    <div class="card-body">
-      <div class="card-title">建队夺冠</div>
-      <div class="card-desc">花预算买球员，组阵容打联赛！Manager</div>
+    <div class="badge-corner cyan">NEW</div>
+    <div class="card-icon-area">
+      <!-- Manager/Clipboard Icon -->
+      <svg class="icon-svg" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+    </div>
+    <div class="card-content">
+      <div class="card-title">CLUB MANAGER <svg class="chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"></path></svg></div>
+      <div class="card-desc">Draft superstars, manage budgets, and simulate league seasons.</div>
       <div class="card-tags">
-        <span class="tag tag-green">5场联赛</span>
-        <span class="tag tag-gold">20名球星</span>
-        <span class="tag tag-blue">积分榜</span>
+        <span class="tag cyan">STRATEGY</span>
+        <span class="tag gray">DRAFT SYSTEM</span>
       </div>
     </div>
   </a>
 
-  <!-- Promo Banner -->
-  <div class="promo-banner">
-    <div class="promo-title">🤖 想要专属 AI 助理？</div>
-    <div class="promo-desc">帮你管理日程、回复消息、24小时在线<br>Want your own AI assistant? From $50!</div>
-    <a href="https://t.me/CSteam008_bot" class="promo-btn">📩 立即咨询 Contact Now</a>
+  <a href="cards.html" class="game-card">
+    <div class="badge-corner cyan">NEW</div>
+    <div class="card-icon-area">
+      <!-- Cards Icon -->
+      <svg class="icon-svg" viewBox="0 0 24 24"><rect x="2" y="4" width="14" height="16" rx="2" ry="2"></rect><rect x="6" y="8" width="16" height="16" rx="2" ry="2"></rect></svg>
+    </div>
+    <div class="card-content">
+      <div class="card-title">STAR DRAFT <svg class="chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"></path></svg></div>
+      <div class="card-desc">Head-to-head tactical card battles featuring elite players.</div>
+      <div class="card-tags">
+        <span class="tag gold">LEGEND CARDS</span>
+        <span class="tag gray">PVE COMBAT</span>
+      </div>
+    </div>
+  </a>
+
+  <a href="runner.html" class="game-card">
+    <div class="card-icon-area">
+      <!-- Runner Icon -->
+      <svg class="icon-svg" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+    </div>
+    <div class="card-content">
+      <div class="card-title">ENDLESS RUNNER <svg class="chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"></path></svg></div>
+      <div class="card-desc">Reaction-based agility course. Evade tackles, collect rewards.</div>
+      <div class="card-tags">
+        <span class="tag cyan">SKILL</span>
+        <span class="tag gray">INFINITY MODE</span>
+      </div>
+    </div>
+  </a>
+
+  <a href="match3.html" class="game-card">
+    <div class="card-icon-area">
+      <!-- Puzzle Icon -->
+      <svg class="icon-svg" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+    </div>
+    <div class="card-content">
+      <div class="card-title">MATCH 3 PUZZLE <svg class="chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"></path></svg></div>
+      <div class="card-desc">Strategic gem matching with explosive combo multipliers.</div>
+      <div class="card-tags">
+        <span class="tag gray">CASUAL</span>
+        <span class="tag gray">COMBO SYSTEM</span>
+      </div>
+    </div>
+  </a>
+
+  <!-- VIP / Assistant Promo -->
+  <div class="vip-banner">
+    <div class="vip-title">ELEVATE YOUR OPERATIONS</div>
+    <div class="vip-desc">Deploy a bespoke AI agent to automate customer service, manage inquiries, and scale your brand 24/7.</div>
+    <a href="https://t.me/CSteam008_bot" class="btn-vip">REQUEST DEPLOYMENT</a>
   </div>
 
 </div>
 
 <script>
-// Aggregate stats from all games
-const slotsCoins = parseInt(localStorage.getItem('slots_coins')||'1000');
-const slotsJackpots = parseInt(localStorage.getItem('slots_bigwins')||'0');
-const penaltyStats = JSON.parse(localStorage.getItem('penalty_stats')||'{"goals":0}');
-const guessStats = JSON.parse(localStorage.getItem('sg_stats')||'{"pts":0}');
-
-document.getElementById('totalCoins').textContent = slotsCoins + (guessStats.pts||0);
-document.getElementById('totalGoals').textContent = penaltyStats.goals || 0;
-document.getElementById('totalJackpots').textContent = slotsJackpots;
-</script>
-
-<script>
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js').catch(()=>{});
-}
+  // Aggregate stats from localStorage silently
+  try {
+    const slotsCoins = parseInt(localStorage.getItem('slots_coins') || '1000');
+    const slotsJackpots = parseInt(localStorage.getItem('slots_bigwins') || '0');
+    const penaltyStats = JSON.parse(localStorage.getItem('penalty_stats') || '{"goals":0}');
+    const guessStats = JSON.parse(localStorage.getItem('sg_stats') || '{"pts":0}');
+    
+    document.getElementById('totalCoins').textContent = (slotsCoins + (guessStats.pts || 0)).toLocaleString();
+    document.getElementById('totalGoals').textContent = (penaltyStats.goals || 0).toLocaleString();
+    document.getElementById('totalJackpots').textContent = slotsJackpots.toLocaleString();
+  } catch(e) {
+    console.error("Stats load error", e);
+  }
 </script>
 </body>
 </html>
